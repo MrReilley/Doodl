@@ -4,9 +4,12 @@ import android.view.MotionEvent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 
-// Reusable utility functions like date formatting, string manipulation, or other helper functions not tied to specific feature or component
+// Reusable utility functions like date formatting, string manipulation, or other helper functions
+// not tied to specific feature or component
 
-fun handleTouchEvent(event: MotionEvent, currentPath: MutableList<Offset>, paths: MutableList<Pair<List<Offset>, Color>>, selectedColor: Color): Boolean {
+fun handleTouchEvent(event: MotionEvent, currentPath: MutableList<Offset>,
+                     paths: MutableList<Pair<List<Offset>, Color>>,
+                     selectedColor: Color): Boolean {
     val action = event.action
     val offset = Offset(event.x, event.y)
 

@@ -42,7 +42,7 @@ fun DrawingActivity(selectedColor: Color, updateSelectedColor: (Color) -> Unit) 
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.DarkGray)
-                .align(Alignment.BottomCenter)
+                .align(Alignment.TopCenter)
         ) {
             Row (modifier = Modifier
                 .fillMaxWidth()
