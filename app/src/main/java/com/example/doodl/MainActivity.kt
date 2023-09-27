@@ -15,8 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.doodl.ui.CanvasActivity
 import com.example.doodl.ui.theme.DoodlTheme
-import com.example.doodl.data.Repository
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,8 +35,15 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/*@Composable
+fun MyApp() {
+    Text(text = "Hello there")    
+}*/
 @Composable
 fun MyApp() {
-    Text(text = "Hello there")
+    var selectedColor by remember { mutableStateOf(Color.Black) }
 
+    CanvasActivity(selectedColor) { newColor ->
+        selectedColor = newColor
+    }
 }
