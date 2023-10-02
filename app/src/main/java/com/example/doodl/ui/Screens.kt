@@ -19,6 +19,7 @@ import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
 
@@ -56,17 +57,20 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     val canvasHeight = canvasSize.height
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-    )  {
-        Button(onClick = {
-            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-            //viewModel.uploadDrawing(bitmap)
-            viewModel.saveBitmapToInternalStorage(bitmap, context)
-        }) {
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Button(
+            onClick = {
+                val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                viewModel.uploadDrawing(bitmap)
+                viewModel.saveBitmapToInternalStorage(bitmap, context)
+            },
+            modifier = Modifier.align(Alignment.BottomEnd)
+        ) {
             Text("Upload/Save")
         }
     }
+
 }
 
 

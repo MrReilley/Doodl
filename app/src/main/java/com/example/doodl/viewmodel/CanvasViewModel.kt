@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.doodl.data.Repository
 import java.io.ByteArrayOutputStream
-import java.io.FileOutputStream
 
 // A ViewModel is a component used to store and manage UI-related data in a way that survives configuration changes
 // (like screen rotations) and is independent of the UI components (e.g. Activities). They are designed to store and manage UI-related
@@ -19,7 +18,7 @@ import java.io.FileOutputStream
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
 
-    /*fun uploadDrawing(bitmap: Bitmap) {
+    fun uploadDrawing(bitmap: Bitmap) {
         try {
             val byteArray = bitmapToByteArray(bitmap)
             val uploadTask = repository.uploadByteArray(byteArray)
@@ -31,12 +30,12 @@ class CanvasViewModel(private val repository: Repository) : ViewModel() {
         } catch (e: Exception) {
             Log.e("CanvasViewModel", "Bitmap to byte array conversion failed: ${e.message}")
         }
-    }*/
+    }
 
     @Throws(Exception::class)
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
         val stream = ByteArrayOutputStream()
-        if (bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream) != true) {
+        if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
             throw Exception("Failed to compress bitmap")
         }
         return stream.toByteArray()
@@ -62,7 +61,7 @@ class CanvasViewModelFactory(private val repository: Repository) : ViewModelProv
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         // Check if modelClass is type CanvasViewModel
         if (modelClass == CanvasViewModel::class.java) {
-            return CanvasViewModel(repository) as T
+            return CanvasViewModel(repository) as T // TODO uncheck cast
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
