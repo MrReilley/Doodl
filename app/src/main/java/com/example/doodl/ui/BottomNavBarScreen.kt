@@ -1,4 +1,4 @@
-package com.example.doodl
+package com.example.doodl.ui
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
