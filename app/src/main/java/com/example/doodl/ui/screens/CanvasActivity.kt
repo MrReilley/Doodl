@@ -1,4 +1,4 @@
-package com.example.doodl.ui
+package com.example.doodl.ui.screens
 
 import com.example.doodl.R
 import androidx.compose.ui.res.painterResource
@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.example.doodl.ui.colorButton
+import com.example.doodl.ui.drawCanvas
 
 // Composable functions for UI of each screen
 
@@ -114,9 +116,6 @@ fun CanvasActivity(viewModel: CanvasViewModel,
             }
         }
     }
-
-
-
 }
 
 
