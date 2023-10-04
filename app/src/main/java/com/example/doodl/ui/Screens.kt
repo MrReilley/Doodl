@@ -1,10 +1,19 @@
 package com.example.doodl.ui
 
-
+import com.example.doodl.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 
 // Composable functions for UI of each screen
 
@@ -59,17 +69,53 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        Button(
-            onClick = {
-                val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-                viewModel.uploadDrawing(bitmap)
-                viewModel.saveBitmapToInternalStorage(bitmap, context)
-            },
-            modifier = Modifier.align(Alignment.BottomEnd)
+
+    }
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Color.DarkGray)
         ) {
-            Text("Upload/Save")
+            Row (modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+                .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                colorButton(selectedColor, Color.Black) { updateSelectedColor(Color.Black) }
+                colorButton(selectedColor, Color.White) { updateSelectedColor(Color.White) }
+                colorButton(selectedColor, Color.Red) { updateSelectedColor(Color.Red) }
+                colorButton(selectedColor, Color.Green) { updateSelectedColor(Color.Green) }
+                colorButton(selectedColor, Color.Blue) { updateSelectedColor(Color.Blue) }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Button(
+                        onClick = {
+                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                            viewModel.uploadDrawing(bitmap)
+                        }
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.uploadicon), contentDescription = "Upload")
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                            viewModel.saveBitmapToInternalStorage(bitmap, context)
+                        }
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.downloadicon), contentDescription = "Download")
+                    }
+                }
+            }
         }
     }
+
+
 
 }
 
