@@ -17,6 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Doodl"
         tools:targetApi="31">
+        <!-- MainActivity declaration -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -27,6 +28,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- FeedActivity declaration now feed is the main entry point for app, this is for testing-->
+        <activity android:name=".FeedActivity" />
     </application>
 
 </manifest>
