@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModelProvider
 import com.example.doodl.data.Repository
-import com.example.doodl.ui.CanvasActivity
+import com.example.doodl.ui.screens.CanvasActivity
 import com.example.doodl.ui.theme.DoodlTheme
 import com.example.doodl.viewmodel.CanvasViewModel
 import com.example.doodl.viewmodel.CanvasViewModelFactory
