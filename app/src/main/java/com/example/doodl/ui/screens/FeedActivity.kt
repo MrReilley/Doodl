@@ -1,4 +1,4 @@
-package com.example.doodl
+package com.example.doodl.ui.screens
 
 import android.graphics.Bitmap
 import android.os.Bundle
