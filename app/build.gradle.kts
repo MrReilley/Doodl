@@ -83,13 +83,15 @@ dependencies {
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    implementation ("androidx.lifecycle:lifecycle-viewmodel:2.6.2")//added ktx
-    implementation("androidx.lifecycle:lifecycle-runtime:2.6.2")// added ktx
+    implementation ("androidx.lifecycle:lifecycle-viewmodel:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime:2.6.2")
     implementation("androidx.lifecycle:lifecycle-common-java8:2.6.2")
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-
     //Firebase
     implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
     implementation("com.google.firebase:firebase-database-ktx:20.2.2")
     implementation("com.google.firebase:firebase-firestore-ktx:24.8.1")
+    //LiveData Compose dependency
+    implementation("androidx.compose.runtime:runtime-livedata:1.2.1")
+
 }
