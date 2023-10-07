@@ -30,7 +30,7 @@ fun FeedScreen() {
         )*/
         //Scrollable Lists
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(20){i ->
+            items(20){
                 androidx.compose.material.Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
@@ -45,5 +45,3 @@ fun FeedScreen() {
 fun FeedScreenPreview() {
     FeedScreen()
 }
-@Composable
-fun doodlCard(){}
