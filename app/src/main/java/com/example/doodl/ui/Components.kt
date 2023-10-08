@@ -12,29 +12,28 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.example.doodl.util.COMMON_STROKE_WIDTH
 
 // Composable functions for reusable UI components
 
 @Composable
-fun drawCanvas(paths: List<Pair<List<Offset>, Color>>,
+fun drawCanvas(paths: List<Triple<List<Offset>, Color, Float>>,
                currentPath: List<Offset>,
-               selectedColor: Color) {
-    val drawStroke = Stroke(width = COMMON_STROKE_WIDTH, cap = StrokeCap.Round)
-
+               selectedColor: Color,
+               brushSize: Float) {
     Canvas(Modifier.fillMaxSize()) {
         // Redraws previous canvas paths user has completed drawing to ensure all paths reapper if UI updates
         // For each path in paths, spilt it into offsets, Color
-        paths.forEach { (offsets, color) ->
+        paths.forEach { (offsets, color, pathBrushSize) ->
             val graphicalPath = Path().apply {
                 // Sets start point to first offset in list
                 moveTo(offsets.first().x, offsets.first().y)
                 // For each offset in path, draw a line to the next point
                 offsets.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(path = graphicalPath, color = color, style = drawStroke)
+            drawPath(path = graphicalPath, color = color, style = Stroke(width = pathBrushSize, cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
         // Draws canvas path currently being drawn if there is an active path
         if (currentPath.isNotEmpty()) {
@@ -44,7 +43,7 @@ fun drawCanvas(paths: List<Pair<List<Offset>, Color>>,
                 // For each offset in currentPath, draw a line to the next point
                 currentPath.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(path = activeGraphicalPath, color = selectedColor, style = drawStroke)
+            drawPath(path = activeGraphicalPath, color = selectedColor, style = Stroke(width = brushSize, cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
     }
 }

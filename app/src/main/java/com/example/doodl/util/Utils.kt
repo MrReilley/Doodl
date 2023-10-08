@@ -10,13 +10,11 @@ import android.graphics.Canvas
 // Reusable utility functions like date formatting, string manipulation, or other helper functions
 // not tied to specific feature or component
 
-// Constant for stroke width across Canvas and Bitmap
-const val COMMON_STROKE_WIDTH = 5f  
-
 fun handleDrawingActivityTouchEvent(event: MotionEvent,
                                     currentPath: MutableList<Offset>,
-                                    paths: MutableList<Pair<List<Offset>, Color>>,
-                                    selectedColor: Color): Boolean {
+                                    paths: MutableList<Triple<List<Offset>, Color, Float>>,
+                                    selectedColor: Color,
+                                    brushSize: Float): Boolean {
     val action = event.action
     val offset = Offset(event.x, event.y)
 
@@ -30,7 +28,7 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
         }
         // If touch is released, add current path to completed paths
         MotionEvent.ACTION_UP -> {
-            paths.add(Pair(currentPath.toList(), selectedColor))
+            paths.add(Triple(currentPath.toList(), selectedColor, brushSize))
             currentPath.clear()
             true
         }
@@ -39,7 +37,7 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
     }
 }
 
-fun generateBitmapFromPaths(paths: List<Pair<List<Offset>, Color>>,
+fun generateBitmapFromPaths(paths: List<Triple<List<Offset>, Color, Float>>,
                             canvasWidth: Int,
                             canvasHeight: Int): Bitmap {
     // Create empty bitmap with given dimensions and color format
@@ -57,16 +55,18 @@ fun generateBitmapFromPaths(paths: List<Pair<List<Offset>, Color>>,
 
     // Create paint object for drawing paths
     val drawingPaint = Paint()
+    drawingPaint.isAntiAlias = true
+    drawingPaint.strokeCap = Paint.Cap.ROUND
+    drawingPaint.strokeJoin = Paint.Join.ROUND
 
     // A path is a series of connected lines formed by multiple points
     for (path in paths) {
         // Get color and points from current path
-        val pathColor = path.second
-        val coordinates = path.first
+        val (coordinates, pathColor, pathBrushSize) = path
 
         // Set paint object's color, stroke width, and style properties
         drawingPaint.color = android.graphics.Color.rgb(pathColor.red, pathColor.green, pathColor.blue)
-        drawingPaint.strokeWidth = COMMON_STROKE_WIDTH
+        drawingPaint.strokeWidth = pathBrushSize
         drawingPaint.style = Paint.Style.STROKE
 
         // Loop through list of coordinates, starting from second point (i=1)
