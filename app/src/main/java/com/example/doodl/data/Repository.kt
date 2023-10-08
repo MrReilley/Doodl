@@ -2,6 +2,7 @@ package com.example.doodl.data
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.android.gms.tasks.Task
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -10,6 +11,8 @@ import com.google.firebase.storage.UploadTask
 // API for data access for rest of application
 // Data operations, abstracting origin of data
 class Repository {
+
+    //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
 
     // Function used in CanvasViewModel to upload byte array representing an image to Firebase Storage
@@ -53,6 +56,34 @@ class Repository {
             onFailure(exception)
         }
     }
+    
+    //Firebase Firestore
+    private val dbReference = FirebaseFirestore.getInstance()
+    fun likePost(imageFileName: String, userId: String): Task<Void> {
+        val postRef = dbReference.collection("posts").document(imageFileName)
+
+        return dbReference.runTransaction { transaction ->
+            val post = transaction.get(postRef).toObject(Post::class.java) ?: Post()
+
+            // If using usersWhoLiked, check if the user already liked the post
+            if (post.usersWhoLiked.contains(userId)) {
+                throw Exception("User already liked the post")
+            }
+
+            // Increment likes count and add userID to usersWhoLiked
+            post.likesCount += 1
+            post.usersWhoLiked.add(userId)
+
+            // Update Firestore
+            transaction.set(postRef, post)
+            null
+        }
+    }
+
+    data class Post(
+        var likesCount: Int = 0,
+        var usersWhoLiked: MutableList<String> = mutableListOf()
+    )
 
 }
 

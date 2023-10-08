@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import com.example.doodl.viewmodel.FeedViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -24,32 +25,19 @@ import com.example.doodl.data.Repository
 import com.example.doodl.ui.theme.DoodlTheme
 import com.example.doodl.viewmodel.FeedViewModelFactory
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 
-
-class FeedActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val repository = Repository()
-        val factory = FeedViewModelFactory(repository)
-        val feedViewModel = ViewModelProvider(this, factory)[FeedViewModel::class.java]
-
-        setContent {
-            DoodlTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Observe images LiveData and pass it to the ImageFeed composable.
-                    val images = feedViewModel.images.observeAsState(emptyList())
-                    ImageFeed(images.value)
-                }
-            }
-        }
-
-        // Fetch images once the activity is created.
+@Composable
+fun FeedScreen() {
+    val repository = Repository()
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    // Fetch images once the composable is launched
+    LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()
     }
+    // Observe images LiveData and pass it to the ImageFeed composable.
+    val images = feedViewModel.images.observeAsState(emptyList())
+    ImageFeed(images.value)
 }
 
 @Composable
