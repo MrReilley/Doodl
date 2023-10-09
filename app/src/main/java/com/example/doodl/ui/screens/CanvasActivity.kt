@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,9 +43,10 @@ import com.example.doodl.ui.drawCanvas
 fun CanvasActivity(viewModel: CanvasViewModel,
                    selectedColor: Color,
                    updateSelectedColor: (Color) -> Unit) {
-    val paths = remember { mutableStateListOf<Pair<List<Offset>, Color>>() }
+    val paths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
+    var brushSize by remember { mutableStateOf(5f) }
 
     // For accessing android system's resources if saving to local storage
     val context = LocalContext.current
@@ -58,32 +60,30 @@ fun CanvasActivity(viewModel: CanvasViewModel,
             }
             // Captures paths with touch event handler
             .pointerInteropFilter { event ->
-                handleDrawingActivityTouchEvent(event, currentPath, paths, selectedColor)
+                handleDrawingActivityTouchEvent(event, currentPath, paths, selectedColor, brushSize)
             }
     ) {
         // Draw the canvas using paths captured from touch event handler
-        drawCanvas(paths, currentPath, selectedColor)
+        drawCanvas(paths, currentPath, selectedColor, brushSize)
     }
 
     val canvasWidth = canvasSize.width
     val canvasHeight = canvasSize.height
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-
-    }
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Box(
+        Column(
             modifier = Modifier
-                .background(Color.DarkGray)
-        ) {
-            Row (modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentHeight()
+                .align(Alignment.TopCenter)
+                .background(Color.DarkGray)
                 .padding(10.dp)
-                .align(Alignment.TopCenter),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 colorButton(selectedColor, Color.Black) { updateSelectedColor(Color.Black) }
@@ -91,27 +91,39 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 colorButton(selectedColor, Color.Red) { updateSelectedColor(Color.Red) }
                 colorButton(selectedColor, Color.Green) { updateSelectedColor(Color.Green) }
                 colorButton(selectedColor, Color.Blue) { updateSelectedColor(Color.Blue) }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                Button(
+                    onClick = {
+                        val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                        viewModel.uploadDrawing(bitmap)
+                    }
                 ) {
-                    Button(
-                        onClick = {
-                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-                            viewModel.uploadDrawing(bitmap)
-                        }
-                    ) {
-                        Icon(painter = painterResource(id = R.drawable.uploadicon), contentDescription = "Upload")
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-                            viewModel.saveBitmapToInternalStorage(bitmap, context)
-                        }
-                    ) {
-                        Icon(painter = painterResource(id = R.drawable.downloadicon), contentDescription = "Download")
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.uploadicon),
+                        contentDescription = "Upload"
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Slider(
+                    value = brushSize,
+                    onValueChange = { brushSize = it },
+                    valueRange = 1f..50f,
+                    modifier = Modifier.weight(2f)
+                )
+                Button(
+                    onClick = {
+                        val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                        viewModel.saveBitmapToInternalStorage(bitmap, context)
+                    },
+                    modifier = Modifier.width(72.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.downloadicon),
+                        contentDescription = "Download"
+                    )
                 }
             }
         }
