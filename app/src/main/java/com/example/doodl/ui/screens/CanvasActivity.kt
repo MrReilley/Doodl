@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -59,7 +55,7 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     val paths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
-    var brushSize by remember { mutableStateOf(5f) }
+    var brushSize by remember { mutableFloatStateOf(5f) }
 
     // For accessing android system's resources if saving to local storage
     val context = LocalContext.current
