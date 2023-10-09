@@ -87,14 +87,19 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 colorButton(selectedColor, Color.Black) { updateSelectedColor(Color.Black) }
-                colorButton(selectedColor, Color.White) { updateSelectedColor(Color.White) }
+                colorButton(selectedColor, Color.Magenta) { updateSelectedColor(Color.Magenta) }
                 colorButton(selectedColor, Color.Red) { updateSelectedColor(Color.Red) }
                 colorButton(selectedColor, Color.Green) { updateSelectedColor(Color.Green) }
                 colorButton(selectedColor, Color.Blue) { updateSelectedColor(Color.Blue) }
                 Button(
                     onClick = {
-                        val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-                        viewModel.uploadDrawing(bitmap)
+                        // Prevents empty canvas from getting uploaded
+                        if(paths.isNotEmpty())
+                        {
+                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                            viewModel.uploadDrawing(bitmap)
+                            paths.clear()
+                        }
                     }
                 ) {
                     Icon(
@@ -115,8 +120,12 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 )
                 Button(
                     onClick = {
-                        val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
-                        viewModel.saveBitmapToInternalStorage(bitmap, context)
+                        // Prevents empty canvas from getting downloaded
+                        if(paths.isNotEmpty())
+                        {
+                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                            viewModel.saveBitmapToInternalStorage(bitmap, context)
+                        }
                     },
                     modifier = Modifier.width(72.dp)
                 ) {
