@@ -110,7 +110,7 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 Slider(
                     value = brushSize,
                     onValueChange = { brushSize = it },
-                    valueRange = 1f..50f,
+                    valueRange = 5f..50f,
                     modifier = Modifier.weight(2f)
                 )
                 Button(
