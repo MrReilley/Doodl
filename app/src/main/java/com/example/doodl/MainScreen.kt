@@ -1,6 +1,6 @@
 package com.example.doodl
 
-import android.annotation.SuppressLint
+/*import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -72,4 +72,4 @@ fun RowScope.AddItem(
             }
         }
     )
-}
+}*/

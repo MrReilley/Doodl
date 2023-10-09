@@ -48,17 +48,6 @@ class FeedViewModel(private val repository: Repository) : ViewModel() {
         })
     }
 
-    fun likePost(imageFileName: String, userId: String) {
-        repository.likePost(imageFileName, userId)
-            .addOnSuccessListener {
-                Log.d("FeedViewModel", "Post liked successfully")
-            }
-            .addOnFailureListener { e ->
-                Log.e("FeedViewModel", "Failed to like post", e)
-            }
-    }
-
-
 
 }
 
