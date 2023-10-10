@@ -54,21 +54,3 @@ fun ImageFeed(images: List<Bitmap>) {
         }
     }
 }
-
-/*@Composable
-fun ImageCard(
-    painter: BitmapPainter,
-    contentDescription: String,
-    title: String,
-    modifier: Modifier = Modifier
-){
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(15),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-    ) {
-        Box(modifier = Modifier.height(200)){
-
-        }
-    }
-}*/
