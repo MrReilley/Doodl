@@ -49,7 +49,6 @@ class FeedViewModel(private val repository: Repository) : ViewModel() {
     }
 
 
-
 }
 
 // Factory for creating FeedViewModel instances with a Repository dependency

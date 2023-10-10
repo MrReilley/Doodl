@@ -28,8 +28,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- FeedActivity declaration now feed is the main entry point for app, this is for testing-->
-        <activity android:name=".ui.screens.FeedActivity" />
     </application>
 
 </manifest>

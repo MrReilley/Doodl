@@ -5,7 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -15,6 +22,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 
 // Composable functions for reusable UI components
 
@@ -63,4 +71,24 @@ fun colorButton(selectedColor: Color, color: Color, onClick: () -> Unit) {
                 else Modifier
             )
     ) {}
+}
+
+@Composable
+fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modifier) {
+    BottomNavigation(
+        modifier = modifier // Apply the passed modifier
+    ) {
+        BottomNavigationItem(
+            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            label = { Text("Feed") },
+            selected = navController.currentDestination?.route == "feed",
+            onClick = { navController.navigate("feed") }
+        )
+        BottomNavigationItem(
+            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            label = { Text("Canvas") },
+            selected = navController.currentDestination?.route == "canvas",
+            onClick = { navController.navigate("canvas") }
+        )
+    }
 }

@@ -1,7 +1,5 @@
 package com.example.doodl.ui.screens
 
-import com.example.doodl.R
-import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,29 +13,40 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.doodl.R
+import com.example.doodl.data.Repository
+import com.example.doodl.ui.colorButton
+import com.example.doodl.ui.drawCanvas
 import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
-import com.example.doodl.ui.colorButton
-import com.example.doodl.ui.drawCanvas
+import com.example.doodl.viewmodel.CanvasViewModelFactory
+
 
 // Composable functions for UI of each screen
+@Composable
+fun CanvasScreen() {
+    val repository = Repository()
+    val canvasViewModel: CanvasViewModel = viewModel(factory = CanvasViewModelFactory(repository))
+    var selectedColor by remember { mutableStateOf(Color.Black) }
 
+    CanvasActivity(canvasViewModel, selectedColor) { newColor ->
+        selectedColor = newColor
+    }
+}
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CanvasActivity(viewModel: CanvasViewModel,
@@ -46,7 +55,7 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     val paths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
-    var brushSize by remember { mutableStateOf(5f) }
+    var brushSize by remember { mutableFloatStateOf(5f) }
 
     // For accessing android system's resources if saving to local storage
     val context = LocalContext.current

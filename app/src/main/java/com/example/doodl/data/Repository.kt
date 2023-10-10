@@ -10,6 +10,8 @@ import com.google.firebase.storage.UploadTask
 // API for data access for rest of application
 // Data operations, abstracting origin of data
 class Repository {
+
+    //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
 
     // Function used in CanvasViewModel to upload byte array representing an image to Firebase Storage
