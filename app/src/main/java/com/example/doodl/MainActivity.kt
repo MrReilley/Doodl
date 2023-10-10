@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                         // Navigation Graph
                         NavHost(
                             navController = navController,
-                            startDestination = "feed",
+                            startDestination = "canvas",
                             //modifier = Modifier.matchParentSize()
                         ) {
                             composable("canvas") { CanvasScreen() }
