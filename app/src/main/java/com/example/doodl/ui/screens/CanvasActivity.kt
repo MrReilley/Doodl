@@ -1,5 +1,6 @@
 package com.example.doodl.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,9 @@ import com.example.doodl.viewmodel.CanvasViewModelFactory
 // Composable functions for UI of each screen
 @Composable
 fun CanvasScreen() {
+    BackHandler {
+        // Do nothing, effectively disabling the back button
+    }
     val repository = Repository()
     val canvasViewModel: CanvasViewModel = viewModel(factory = CanvasViewModelFactory(repository))
     var selectedColor by remember { mutableStateOf(Color.Black) }
