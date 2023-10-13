@@ -1,6 +1,7 @@
 package com.example.doodl.ui.screens
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,9 @@ import com.example.doodl.viewmodel.FeedViewModelFactory
 
 @Composable
 fun FeedScreen() {
+    BackHandler {
+        // Do nothing, effectively disabling the back button
+    }
     val repository = Repository()
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
     // Fetch images once the composable is launched

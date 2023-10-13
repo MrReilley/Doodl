@@ -1,5 +1,7 @@
 package com.example.doodl.ui.screens
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -19,10 +21,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
-fun LoginScreen(navController: NavController? = null) {
+fun LoginScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
     // MutableState variables to hold the input values for email and password.
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Handle back button press in LoginScreen
+    BackHandler {
+        // Close the app
+        activity?.finish()
+    }
 
     // Root Column: Main parent layout which is vertically oriented.
     Column(
@@ -69,7 +77,17 @@ fun LoginScreen(navController: NavController? = null) {
 
             // Button which triggers login logic when clicked.
             Button(onClick = {
-                // Implement login logic here.
+                // TODO: Implement login logic here.
+                // On successful login, navigate to canvas.
+
+                // Sample logic: navigate if email and password are not empty (modify as per your requirement)
+                if(email.isNotEmpty() && password.isNotEmpty()) {
+                    // After successfully logging in, navigate to your main screen.
+                    navController?.navigate("feed") {
+                        // Pop everything up to the login screen from the back stack (inclusive)
+                        popUpTo("loginScreen") { inclusive = true }
+                    }
+                }
             }) {
                 Text("Login")
             }
