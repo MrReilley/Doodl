@@ -18,8 +18,9 @@
         android:theme="@style/Theme.Doodl"
         tools:targetApi="31">
         <!-- MainActivity declaration -->
-        <activity
-            android:name=".MainActivity"
+        <activity android:name=".MainActivity"/>
+        <!-- LoginActivity declaration: currently the main entry point of app-->
+        <activity android:name=".LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.Doodl">
             <intent-filter>
