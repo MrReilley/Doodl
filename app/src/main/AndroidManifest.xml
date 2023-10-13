@@ -18,9 +18,8 @@
         android:theme="@style/Theme.Doodl"
         tools:targetApi="31">
         <!-- MainActivity declaration -->
-        <activity android:name=".MainActivity"/>
-        <!-- LoginActivity declaration: currently the main entry point of app-->
-        <activity android:name=".LoginActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Doodl">
             <intent-filter>
@@ -29,6 +28,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- LoginActivity declaration: currently the main entry point of app-->
+
+
     </application>
 
 </manifest>

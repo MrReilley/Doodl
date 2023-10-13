@@ -28,6 +28,10 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
         }
         // If touch is released, add current path to completed paths
         MotionEvent.ACTION_UP -> {
+            if (currentPath.size == 1) {
+                // If it's a single point (a dot), duplicate the point to make it a "path"
+                currentPath.add(Offset(event.x + 1e-5f, event.y + 1e-5f)) // tiny offset to make it a line
+            }
             paths.add(Triple(currentPath.toList(), selectedColor, brushSize))
             currentPath.clear()
             true
