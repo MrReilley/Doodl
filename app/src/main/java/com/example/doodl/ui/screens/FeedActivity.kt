@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -18,7 +19,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,16 +62,6 @@ fun ImageFeed(images: List<Bitmap>) {
     LazyColumn {
         items(images) { image ->
             // For each image, create an Image composable
-                /*Image(
-                    // Convert Bitmap to a format Image composable understands and renders it
-                    painter = BitmapPainter(image.asImageBitmap()), // null implies decorative image (no alt text)
-                    contentDescription = null,
-                    // Style modifiers to control the layout and appearance of the image
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .padding(8.dp)
-                )*/
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -99,10 +94,21 @@ fun ImageFeed(images: List<Bitmap>) {
                         contentScale = ContentScale.Crop
                     )
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        var applyColorFilter by remember { mutableStateOf(false) }
+
                         Image(
                             painter = painterResource(id = R.drawable.likeicon),
                             contentDescription = null,
-                            colorFilter = ColorFilter.tint(Color.Red)
+                            colorFilter = if (!applyColorFilter) {
+                                ColorFilter.tint(Color.LightGray)
+                            } else {
+                                ColorFilter.tint(Color.Red)
+                            },
+                            alignment = Alignment.TopEnd,
+                            modifier = Modifier.clickable {
+                                // Toggle the applyColorFilter when the image is clicked
+                                applyColorFilter = !applyColorFilter
+                            }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp))
                     }
