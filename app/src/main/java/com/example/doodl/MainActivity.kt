@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -19,7 +20,8 @@ import com.example.doodl.ui.screens.CanvasScreen
 import com.example.doodl.ui.screens.FeedScreen
 import com.example.doodl.ui.screens.LoginScreen
 import com.example.doodl.ui.screens.RegistrationScreen
-
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +33,7 @@ class MainActivity : ComponentActivity() {
                 color = MaterialTheme.colorScheme.background
             ) {
                 val navController = rememberNavController()
+                var navBarHeight by remember { mutableStateOf(0) }
 
                 // Retrieve the current back stack entry
                 val backStackEntry by navController.currentBackStackEntryAsState()
@@ -44,14 +47,16 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
                         composable("registrationScreen") { RegistrationScreen(navController) }
-                        composable("canvas") { CanvasScreen() }
+                        composable("canvas") { CanvasScreen(navBarHeight) }
                         composable("feed") { FeedScreen() }
                     }
 
                     // Bottom Navigation Bar
                     // Only display it if currentRoute is either "canvas" or "feed"
                     if(currentRoute in listOf("canvas", "feed")) {
-                        BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter))
+                        BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter)) { height ->
+                            navBarHeight = height
+                        }
                     }
                 }
             }
