@@ -20,8 +20,8 @@ import kotlinx.coroutines.withContext
 
 class FeedViewModel(private val repository: Repository) : ViewModel() {
     // LiveData to hold a list of Bitmap images from Firebase.
-    private val _images = MutableLiveData<List<Bitmap>>()
-    val images: LiveData<List<Bitmap>> = _images
+    private val newImages = MutableLiveData<List<Bitmap>>()
+    val liveImages: LiveData<List<Bitmap>> = newImages
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchImages() {
@@ -41,7 +41,7 @@ class FeedViewModel(private val repository: Repository) : ViewModel() {
                     }
                 }
                 // Update _images LiveData with the fetched Bitmaps
-                _images.value = bitmaps
+                newImages.value = bitmaps
             }
         }, onFailure = { exception ->
             Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
