@@ -100,7 +100,19 @@ fun RegistrationScreen(navController: NavController? = null) {
 
             // Button that, when clicked, performs registration logic.
             Button(onClick = {
-                // Insert registration logic here.
+                // TODO: Implement registration logic here.
+                // On successful registration, navigate to canvas screen.
+
+                // Sample logic: navigate if email, password, and confirmPassword are not empty and password equals confirmPassword
+                if(email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) {
+                    // If registration is successful, navigate to canvas.
+                    navController?.navigate("feed") {
+                        // Pop up to the root of the navigation graph and remove everything in the back stack.
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
+                }
             }) {
                 Text("Register")
             }
