@@ -4,9 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -20,11 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.doodl.R
 import com.example.doodl.data.Repository
@@ -60,36 +68,15 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     // For accessing android system's resources if saving to local storage
     val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            // Updates canvas sized based on size of Box layout
-            .onGloballyPositioned { coordinates ->
-                canvasSize = coordinates.size
-            }
-            // Captures paths with touch event handler
-            .pointerInteropFilter { event ->
-                handleDrawingActivityTouchEvent(event, currentPath, paths, selectedColor, brushSize)
-            }
-    ) {
-        // Draw the canvas using paths captured from touch event handler
-        drawCanvas(paths, currentPath, selectedColor, brushSize)
-    }
-
-    val canvasWidth = canvasSize.width
-    val canvasHeight = canvasSize.height
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
+    Column(
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
                 .wrapContentHeight()
-                .align(Alignment.TopCenter)
                 .background(Color.DarkGray)
                 .padding(10.dp)
+                .zIndex(1f)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -103,9 +90,8 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 Button(
                     onClick = {
                         // Prevents empty canvas from getting uploaded
-                        if(paths.isNotEmpty())
-                        {
-                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                        if (paths.isNotEmpty()) {
+                            val bitmap = generateBitmapFromPaths(paths, canvasSize.width, canvasSize.height)
                             viewModel.uploadDrawing(bitmap)
                             paths.clear()
                         }
@@ -130,9 +116,8 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 Button(
                     onClick = {
                         // Prevents empty canvas from getting downloaded
-                        if(paths.isNotEmpty())
-                        {
-                            val bitmap = generateBitmapFromPaths(paths, canvasWidth, canvasHeight)
+                        if (paths.isNotEmpty()) {
+                            val bitmap = generateBitmapFromPaths(paths, canvasSize.width, canvasSize.height)
                             viewModel.saveBitmapToInternalStorage(bitmap, context)
                         }
                     },
@@ -145,7 +130,27 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 }
             }
         }
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    // Adjust canvas height based on control panel height
+                    val height = coordinates.size.height
+                    val width = coordinates.size.width
+                    canvasSize = IntSize(width, height)
+                }
+                // Captures paths with touch event handler
+                .pointerInteropFilter { event ->
+                    handleDrawingActivityTouchEvent(
+                        event,
+                        currentPath,
+                        paths,
+                        selectedColor,
+                        brushSize
+                    )
+                }
+        ) {
+            // Draw the canvas using paths captured from touch event handler
+            drawCanvas(paths, currentPath, selectedColor, brushSize)
+        }
     }
 }
-
-
