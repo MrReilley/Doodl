@@ -33,7 +33,7 @@ fun FeedScreen() {
         feedViewModel.fetchImages()
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.images.observeAsState(emptyList())
+    val images = feedViewModel.liveImages.observeAsState(emptyList())
     ImageFeed(images.value)
 }
 

@@ -15,15 +15,15 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
                                     paths: MutableList<Triple<List<Offset>, Color, Float>>,
                                     selectedColor: Color,
                                     brushSize: Float): Boolean {
-    val action = event.action
-    val offset = Offset(event.x, event.y)
+    val touchAction = event.action
+    val touchActionCoordinates = Offset(event.x, event.y)
 
     // Handles touch events for drawing paths
     // Path is a sequence of connected points represented by a list of Offsets (coordinates)
-    return when (action) {
+    return when (touchAction) {
         // If starting to draw or drawing, add to current path
         MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-            currentPath.add(offset)
+            currentPath.add(touchActionCoordinates)
             true
         }
         // If touch is released, add current path to completed paths
