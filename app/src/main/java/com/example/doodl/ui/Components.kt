@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -91,7 +92,8 @@ fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modif
                     lastHeight = newHeight
                     onHeightCalculated(newHeight)
                 }
-            }
+            },
+        backgroundColor = MaterialTheme.colorScheme.primary,
     ) {
         BottomNavigationItem(
             icon = { Icon(Icons.Default.Info, contentDescription = null) },

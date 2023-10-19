@@ -22,40 +22,43 @@ import com.example.doodl.ui.screens.LoginScreen
 import com.example.doodl.ui.screens.RegistrationScreen
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.doodl.ui.theme.DoodlTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // A surface container using the 'background' color from the theme
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                val navController = rememberNavController()
-                var navBarHeight by remember { mutableStateOf(0) }
+            DoodlTheme {
+                // A surface container using the 'background' color from the theme
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    var navBarHeight by remember { mutableStateOf(0) }
 
-                // Retrieve the current back stack entry
-                val backStackEntry by navController.currentBackStackEntryAsState()
-                // Retrieve the current route
-                val currentRoute = backStackEntry?.destination?.route
+                    // Retrieve the current back stack entry
+                    val backStackEntry by navController.currentBackStackEntryAsState()
+                    // Retrieve the current route
+                    val currentRoute = backStackEntry?.destination?.route
 
-                Box(Modifier.fillMaxSize()) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = "loginScreen",
-                    ) {
-                        composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
-                        composable("registrationScreen") { RegistrationScreen(navController) }
-                        composable("canvas") { CanvasScreen(navBarHeight) }
-                        composable("feed") { FeedScreen() }
-                    }
+                    Box(Modifier.fillMaxSize()) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = "loginScreen",
+                        ) {
+                            composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
+                            composable("registrationScreen") { RegistrationScreen(navController) }
+                            composable("canvas") { CanvasScreen(navBarHeight) }
+                            composable("feed") { FeedScreen() }
+                        }
 
-                    // Bottom Navigation Bar
-                    // Only display it if currentRoute is either "canvas" or "feed"
-                    if(currentRoute in listOf("canvas", "feed")) {
-                        BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter)) { height ->
-                            navBarHeight = height
+                        // Bottom Navigation Bar
+                        // Only display it if currentRoute is either "canvas" or "feed"
+                        if(currentRoute in listOf("canvas", "feed")) {
+                            BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter)) { height ->
+                                navBarHeight = height
+                            }
                         }
                     }
                 }
