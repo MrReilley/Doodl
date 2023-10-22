@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 
 // Composable functions for reusable UI components
 
@@ -107,5 +109,19 @@ fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modif
             selected = navController.currentDestination?.route == "canvas",
             onClick = { navController.navigate("canvas") }
         )
+        // Logout button
+        BottomNavigationItem(
+            icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Logout") },
+            label = { Text("Logout") },
+            selected = false,  // This button doesn't have a "selected" state
+            onClick = { logout(navController) }
+        )
+    }
+}
+
+fun logout(navController: NavController) {
+    FirebaseAuth.getInstance().signOut()
+    navController.navigate("loginScreen") {
+        popUpTo("loginScreen") { inclusive = true }
     }
 }

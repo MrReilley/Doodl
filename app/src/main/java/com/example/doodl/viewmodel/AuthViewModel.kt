@@ -33,12 +33,23 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
+
+    fun resetAuthState() {
+        _authState.value = null // Or some neutral state if you wish
+    }
+
 }
 
 // Sealed class to represent different UI states
 sealed class AuthState {
     object Success : AuthState()
     data class Error(val message: String) : AuthState()
+}
+
+sealed class LoginState {
+    object Loading : LoginState()
+    object Success : LoginState()
+    data class Error(val message: String) : LoginState()
 }
 
 class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {

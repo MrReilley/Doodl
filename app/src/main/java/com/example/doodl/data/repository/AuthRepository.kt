@@ -7,9 +7,7 @@ import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 
@@ -68,8 +66,6 @@ class AuthRepository {
             LoginState.Error(e.message ?: "An error occurred while logging in.")
         }
     }
-
-
 
     private fun generateUniqueUsername(): Task<String> {
         val taskSource = TaskCompletionSource<String>()

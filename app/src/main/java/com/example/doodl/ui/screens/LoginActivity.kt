@@ -1,5 +1,6 @@
 package com.example.doodl.ui.screens
 
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -18,17 +19,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.doodl.data.repository.AuthRepository
+import com.example.doodl.viewmodel.AuthState
+import com.example.doodl.viewmodel.AuthViewModel
+import com.example.doodl.viewmodel.AuthViewModelFactory
 
 @Composable
-fun LoginActivity(navController: NavController? = null, activity: ComponentActivity? = null) {
+fun LoginScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
 
     // MutableState variables to hold the input values for email and password.
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Obtain the ViewModel
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(AuthRepository()))
+    // Observe the LiveData
+    val authState by authViewModel.authState.observeAsState()
+    var hasNavigated by rememberSaveable { mutableStateOf(false) }
+
 
     // Handle back button press in LoginScreen
     BackHandler {
@@ -98,10 +113,13 @@ fun LoginActivity(navController: NavController? = null, activity: ComponentActiv
                 // Sample logic: navigate if email and password are not empty (modify as per your requirement)
                 if(email.isNotEmpty() && password.isNotEmpty()) {
                     // After successfully logging in, navigate to your main screen.
-                    navController?.navigate("feed") {
-                        // Pop everything up to the login screen from the back stack (inclusive)
-                        popUpTo("loginScreen") { inclusive = true }
+                    if(password.length >= 6) {
+                        authViewModel.login(email, password) // Call ViewModel method
+                    } else {
+                        // Show feedback to user that password is too short.
                     }
+                } else {
+                    // Show feedback to user if conditions aren't met ("Please check your input fields.").
                 }
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
@@ -134,6 +152,25 @@ fun LoginActivity(navController: NavController? = null, activity: ComponentActiv
             {
                 Text("Register")
             }
+            // Handle authentication state
+            when (authState) {
+                is AuthState.Success -> {
+                    if (!hasNavigated) {
+                        navController?.navigate("feed") {
+                            popUpTo("loginScreen") { inclusive = true }
+                        }
+                        hasNavigated = true
+                        // Also, reset your authState here to avoid re-triggering.
+                        authViewModel.resetAuthState()
+                    }
+                }
+                is AuthState.Error -> {
+                    // Show a SnackBar, Toast, or any other indication of the error here.
+                    val errorMessage = (authState as AuthState.Error).message
+                    Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
+                }
+                null -> {} // Handle any default state or initialization state here, if needed.
+            }
         }
     }
 }
@@ -145,5 +182,5 @@ fun LoginActivity(navController: NavController? = null, activity: ComponentActiv
 //remove ?= null from LoginScreen() if you no longer need the preview
 //same for ? in navController?.navigate()
 fun PreviewLoginScreen() {
-    LoginActivity()
+    LoginScreen()
 }
