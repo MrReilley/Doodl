@@ -1,4 +1,4 @@
-package com.example.doodl.data
+package com.example.doodl.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.android.gms.tasks.Task
@@ -6,7 +6,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
 
-// Code that interacts with Firebase Firestore and Firebase Firestorage
+// Code that interacts with Firebase Storage
 // API for data access for rest of application
 // Data operations, abstracting origin of data
 class Repository {

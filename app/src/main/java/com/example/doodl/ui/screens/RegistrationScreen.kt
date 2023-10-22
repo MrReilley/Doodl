@@ -17,11 +17,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.doodl.data.repository.AuthRepository
+import com.example.doodl.viewmodel.AuthState
+import com.example.doodl.viewmodel.AuthViewModel
+import com.example.doodl.viewmodel.AuthViewModelFactory
 
 @Composable
 fun RegistrationScreen(navController: NavController? = null) {
@@ -30,6 +36,12 @@ fun RegistrationScreen(navController: NavController? = null) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    val repository = AuthRepository()  // Or obtain it from another source if needed
+    val factory = AuthViewModelFactory(repository)
+    val authViewModel: AuthViewModel = viewModel(factory = factory)
+
+
 
     // Scaffold is a high-level composable that provides structure to visual content and
     // top-level components such as TopAppBar, Drawer, BottomNavigation, and more.
@@ -125,18 +137,37 @@ fun RegistrationScreen(navController: NavController? = null) {
 
                 // Sample logic: navigate if email, password, and confirmPassword are not empty and password equals confirmPassword
                 if(email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) {
-                    // If registration is successful, navigate to canvas.
-                    navController?.navigate("feed") {
-                        // Pop up to the root of the navigation graph and remove everything in the back stack.
-                        popUpTo(navController.graph.startDestinationId) {
-                            inclusive = true
-                        }
+                    if(password.length >= 6) {
+                        authViewModel.register(email, password) // Call ViewModel method
+                    } else {
+                        // Show feedback to user that password is too short.
                     }
+                } else {
+                    // Show feedback to user if conditions aren't met ("Please check your input fields.").
                 }
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
                 Text("Register")
+            }
+
+            // Observe the authState LiveData from the ViewModel
+            authViewModel.authState.observeAsState().value?.let { state ->
+                when (state) {
+                    is AuthState.Success -> {
+                        // Navigate to canvas/feed screen if registration is successful
+                        navController?.navigate("feed") {
+                            popUpTo(navController.graph.startDestinationId) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                    is AuthState.Error -> {
+                        // Display error to user, e.g., using a Snackbar.
+                        //showSnackbar(state.errorMessage)
+                    }
+                    else -> { /* Handle other cases if needed */ }
+                }
             }
         }
     }

@@ -24,7 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
-fun LoginScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
+fun LoginActivity(navController: NavController? = null, activity: ComponentActivity? = null) {
 
     // MutableState variables to hold the input values for email and password.
     var email by remember { mutableStateOf("") }
@@ -145,5 +145,5 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
 //remove ?= null from LoginScreen() if you no longer need the preview
 //same for ? in navController?.navigate()
 fun PreviewLoginScreen() {
-    LoginScreen()
+    LoginActivity()
 }

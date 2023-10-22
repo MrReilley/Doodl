@@ -18,7 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.doodl.ui.BottomNavigationBar
 import com.example.doodl.ui.screens.CanvasScreen
 import com.example.doodl.ui.screens.FeedScreen
-import com.example.doodl.ui.screens.LoginScreen
+import com.example.doodl.ui.screens.LoginActivity
 import com.example.doodl.ui.screens.RegistrationScreen
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             startDestination = "loginScreen",
                         ) {
-                            composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
+                            composable("loginScreen") { LoginActivity(navController, this@MainActivity) }
                             composable("registrationScreen") { RegistrationScreen(navController) }
                             composable("canvas") { CanvasScreen(navBarHeight) }
                             composable("feed") { FeedScreen() }
