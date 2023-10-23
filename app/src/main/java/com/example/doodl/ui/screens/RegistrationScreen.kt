@@ -42,7 +42,6 @@ fun RegistrationScreen(navController: NavController? = null) {
     val authViewModel: AuthViewModel = viewModel(factory = factory)
 
 
-
     // Scaffold is a high-level composable that provides structure to visual content and
     // top-level components such as TopAppBar, Drawer, BottomNavigation, and more.
     Scaffold(
@@ -134,42 +133,52 @@ fun RegistrationScreen(navController: NavController? = null) {
             Button(onClick = {
                 // TODO: Implement registration logic here.
                 // On successful registration, navigate to canvas screen.
-
-                // Sample logic: navigate if email, password, and confirmPassword are not empty and password equals confirmPassword
-                if(email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) {
-                    if(password.length >= 6) {
-                        authViewModel.register(email, password) // Call ViewModel method
-                    } else {
-                        // Show feedback to user that password is too short.
-                    }
-                } else {
-                    // Show feedback to user if conditions aren't met ("Please check your input fields.").
-                }
+                registrationInputValidation(email, password, confirmPassword, authViewModel)
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
                 Text("Register")
             }
+            AuthStateNavigation(authViewModel, navController)
+        }
+    }
+}
 
-            // Observe the authState LiveData from the ViewModel
-            authViewModel.authState.observeAsState().value?.let { state ->
-                when (state) {
-                    is AuthState.Success -> {
-                        // Navigate to canvas/feed screen if registration is successful
-                        navController?.navigate("feed") {
-                            popUpTo(navController.graph.startDestinationId) {
-                                inclusive = true
-                            }
-                        }
+@Composable
+fun AuthStateNavigation(authViewModel: AuthViewModel, navController: NavController? = null) {
+    authViewModel.authState.observeAsState().value?.let { state ->
+        when (state) {
+            is AuthState.Success -> {
+                // Navigate to canvas/feed screen if registration is successful
+                navController?.navigate("feed") {
+                    popUpTo(navController.graph.startDestinationId) {
+                        inclusive = true
                     }
-                    is AuthState.Error -> {
-                        // Display error to user, e.g., using a Snackbar.
-                        //showSnackbar(state.errorMessage)
-                    }
-                    else -> { /* Handle other cases if needed */ }
                 }
             }
+            is AuthState.Error -> {
+                // Display error to user, e.g., using a Snackbar.
+                //showSnackbar(state.errorMessage)
+            }
+            else -> { /* Handle other cases if needed */ }
         }
+    }
+}
+
+fun registrationInputValidation(
+    email: String,
+    password: String,
+    confirmPassword: String,
+    authViewModel: AuthViewModel
+) {
+    if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) {
+        if (password.length >= 6) {
+            authViewModel.register(email, password) // Call ViewModel method
+        } else {
+            // Show feedback to user that password is too short.
+        }
+    } else {
+        // Show feedback to user if conditions aren't met ("Please check your input fields.").
     }
 }
 

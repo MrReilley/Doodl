@@ -107,20 +107,9 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
 
             // Button which triggers login logic when clicked.
             Button(onClick = {
-                // TODO: Implement login logic here.
+                // TODO: Implement login logic here. Currently only handles password >= 6
                 // On successful login, navigate to canvas.
-
-                // Sample logic: navigate if email and password are not empty (modify as per your requirement)
-                if(email.isNotEmpty() && password.isNotEmpty()) {
-                    // After successfully logging in, navigate to your main screen.
-                    if(password.length >= 6) {
-                        authViewModel.login(email, password) // Call ViewModel method
-                    } else {
-                        // Show feedback to user that password is too short.
-                    }
-                } else {
-                    // Show feedback to user if conditions aren't met ("Please check your input fields.").
-                }
+                loginInputValidation(email, password, authViewModel, activity)
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
@@ -152,30 +141,62 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             {
                 Text("Register")
             }
-            // Handle authentication state
-            when (authState) {
-                is AuthState.Success -> {
-                    if (!hasNavigated) {
-                        navController?.navigate("feed") {
-                            popUpTo("loginScreen") { inclusive = true }
-                        }
-                        hasNavigated = true
-                        // Also, reset your authState here to avoid re-triggering.
-                        authViewModel.resetAuthState()
-                    }
-                }
-                is AuthState.Error -> {
-                    // Show a SnackBar, Toast, or any other indication of the error here.
-                    val errorMessage = (authState as AuthState.Error).message
-                    Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
-                }
-                null -> {} // Handle any default state or initialization state here, if needed.
-            }
+            LoginStateNavigation(authState, navController, hasNavigated, {
+                hasNavigated = true
+            }, activity, authViewModel)
         }
     }
 }
 
+@Composable
+fun LoginStateNavigation(
+    authState: AuthState?,
+    navController: NavController?,
+    hasNavigated: Boolean,
+    onSuccessfulNavigation: () -> Unit,
+    activity: ComponentActivity?,
+    authViewModel: AuthViewModel
+) {
+    when (authState) {
+        is AuthState.Success -> {
+            if (!hasNavigated) {
+                navController?.navigate("feed") {
+                    popUpTo("loginScreen") { inclusive = true }
+                }
+                onSuccessfulNavigation()  // This lambda will be responsible for setting hasNavigated to true.
+                // reset authState to avoid re-triggering.
+                authViewModel.resetAuthState()
+            }
+        }
+        is AuthState.Error -> {
+            // Show a SnackBar, Toast, or any other indication of the error here.
+            val errorMessage = (authState as AuthState.Error).message
+            Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
+        }
+        null -> {} // Handle any default state or initialization state here, if needed.
+    }
+}
 
+fun loginInputValidation(
+    email: String,
+    password: String,
+    authViewModel: AuthViewModel,
+    activity: ComponentActivity?  // If you want to show Toast messages, you'll need a context.
+) {
+    // Sample logic: navigate if email and password are not empty (modify as per your requirement)
+    if(email.isNotEmpty() && password.isNotEmpty()) {
+        // After successfully logging in, navigate to your main screen.
+        if(password.length >= 6) {
+            authViewModel.login(email, password) // Call ViewModel method
+        } else {
+            // Show feedback to user that password is too short.
+            Toast.makeText(activity, "Password is too short!", Toast.LENGTH_SHORT).show()
+        }
+    } else {
+        // Show feedback to user if conditions aren't met ("Please check your input fields.").
+        Toast.makeText(activity, "Please check your input fields.", Toast.LENGTH_SHORT).show()
+    }
+}
 
 @Preview
 @Composable
