@@ -1,17 +1,20 @@
 package com.example.doodl.ui.screens
 
 import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +34,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,21 +62,26 @@ fun FeedScreen() {
 
 @Composable
 fun ImageFeed(images: List<Bitmap>) {
+    // Obtain the context using LocalContext.current
+    val context = LocalContext.current
+
     // Display a vertical list of images.
     LazyColumn {
         items(images) { image ->
             // For each image, create an Image composable
+            // background of feed
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.LightGray)
-            ){
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                         .background(Color.White)
                 ) {
+                    // feed card layout
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RoundImageCard(
                             image = R.drawable.likeicon,
@@ -89,7 +98,7 @@ fun ImageFeed(images: List<Bitmap>) {
                         // Style modifiers to control the layout and appearance of the image
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(0.59f)//changed aspect ratio (Old A.R: 1)
+                            .aspectRatio(0.59f) // changed aspect ratio (Old A.R: 1)
                             .padding(8.dp),
                         contentScale = ContentScale.Crop
                     )
@@ -108,15 +117,40 @@ fun ImageFeed(images: List<Bitmap>) {
                             modifier = Modifier.clickable {
                                 // Toggle the applyColorFilter when the image is clicked
                                 applyColorFilter = !applyColorFilter
+                                if(applyColorFilter){
+                                    val message = "You liked a post"
+                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                    // Display a toast message using the obtained context
+                                    Toast.makeText(context, message, duration).show()
+                                }else{
+                                    val message = "You disliked a post"
+                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                    // Display a toast message using the obtained context
+                                    Toast.makeText(context, message, duration).show()
+                                }
                             }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp))
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Image(
+                            painter = painterResource(id = R.drawable.downloadicon),
+                            contentDescription = "Download",
+                            modifier = Modifier.clickable {
+                                val message = "This is a fake download lol"
+                                val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                // Display a toast message using the obtained context
+                                Toast.makeText(context, message, duration).show()
+                            }.size(26.dp)
+                        )
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun RoundImageCard(
@@ -132,4 +166,3 @@ fun RoundImageCard(
         )
     }
 }
-
