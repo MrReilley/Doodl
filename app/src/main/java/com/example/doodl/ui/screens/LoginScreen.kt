@@ -2,9 +2,11 @@ package com.example.doodl.ui.screens
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,11 +19,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
 fun LoginScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
+
     // MutableState variables to hold the input values for email and password.
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -35,8 +39,9 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
     // Root Column: Main parent layout which is vertically oriented.
     Column(
         modifier = Modifier
-            .fillMaxSize()  // Fill the entire available screen size.
-            .padding(16.dp),  // Apply padding of 16dp to every side of the column.
+            .fillMaxSize()  // Fill the entires available screen size.
+            .background(MaterialTheme.colorScheme.tertiary)  // Apply padding of 16dp to every side of the column.
+            .padding(16.dp),
         verticalArrangement = Arrangement.Center  // Vertically center the contents of the column.
     ) {
         // Centered Column: Contains input fields and Login button.
@@ -56,7 +61,12 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 value = email,
                 onValueChange = { email = it },  // Update the email state when the text changes.
                 label = { Text("Email") },  // Label that appears when the field is empty and shrinks when text is entered.
-                modifier = Modifier.fillMaxWidth()  // Make the text field as wide as possible within the Column.
+                modifier = Modifier.fillMaxWidth(), // Make the text field as wide as possible within the Column.
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.Black,
+                    cursorColor = MaterialTheme.colorScheme.secondary
+                )
             )
 
             // Provide a vertical space of 16dp.
@@ -69,7 +79,12 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),  // Make the text field as wide as possible within the Column.
                 visualTransformation = PasswordVisualTransformation(),  // Visual transformation to obscure password input.
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)  // Set keyboard type to password to aid user input.
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),  // Set keyboard type to password to aid user input.
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.Black,
+                    cursorColor = MaterialTheme.colorScheme.secondary
+                )
             )
 
             // Provide a vertical space of 24dp.
@@ -88,7 +103,9 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                         popUpTo("loginScreen") { inclusive = true }
                     }
                 }
-            }) {
+            },
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
+            {
                 Text("Login")
             }
         }
@@ -109,14 +126,18 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             Spacer(modifier = Modifier.width(8.dp))
 
             // Button which navigates to the registration screen when clicked.
-            Button(onClick = {
+            Button(
+                onClick = {
                 navController?.navigate("registrationScreen")  // Use NavController to navigate to the registration screen.
-            }) {
+            },
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
+            {
                 Text("Register")
             }
         }
     }
 }
+
 
 
 @Preview

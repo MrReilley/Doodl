@@ -2,16 +2,25 @@ package com.example.doodl.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -30,6 +39,7 @@ import com.example.doodl.R
 import com.example.doodl.data.Repository
 import com.example.doodl.ui.colorButton
 import com.example.doodl.ui.drawCanvas
+import com.example.doodl.ui.eraserButton
 import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
@@ -59,6 +69,7 @@ fun CanvasActivity(viewModel: CanvasViewModel,
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
     var brushSize by remember { mutableFloatStateOf(5f) }
+    val redoPaths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
 
     // For accessing android system's resources if saving to local storage
     val context = LocalContext.current
@@ -67,7 +78,8 @@ fun CanvasActivity(viewModel: CanvasViewModel,
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .wrapContentHeight()
                 .background(Color.DarkGray)
                 .padding(10.dp)
@@ -77,11 +89,25 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                colorButton(selectedColor, Color.Black) { updateSelectedColor(Color.Black) }
-                colorButton(selectedColor, Color.Magenta) { updateSelectedColor(Color.Magenta) }
-                colorButton(selectedColor, Color.Red) { updateSelectedColor(Color.Red) }
-                colorButton(selectedColor, Color.Green) { updateSelectedColor(Color.Green) }
-                colorButton(selectedColor, Color.Blue) { updateSelectedColor(Color.Blue) }
+                IconButton(onClick = {
+                    if (paths.isNotEmpty()) {
+                        val lastPath = paths.removeLast()
+                        redoPaths.add(lastPath)
+                    }
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Undo")
+                }
+                IconButton(onClick = {
+                    if (redoPaths.isNotEmpty()) {
+                        val lastRedoPath = redoPaths.removeLast()
+                        paths.add(lastRedoPath)
+                    }
+                }) {
+                    Icon(Icons.Default.ArrowForward, contentDescription = "Redo")
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
                 Button(
                     onClick = {
                         // Prevents empty canvas from getting uploaded
@@ -94,10 +120,32 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.uploadicon),
-                        contentDescription = "Upload"
+                        contentDescription = "Upload",
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    colorButton(selectedColor, Color.Black) { updateSelectedColor(Color.Black) }
+                    colorButton(selectedColor, Color.Magenta) { updateSelectedColor(Color.Magenta) }
+                    colorButton(selectedColor, Color.Red) { updateSelectedColor(Color.Red) }
+                    colorButton(selectedColor, Color.Green) { updateSelectedColor(Color.Green) }
+                    colorButton(selectedColor, Color.Blue) { updateSelectedColor(Color.Blue) }
+                    eraserButton(selectedColor) { updateSelectedColor(Color.White) }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -105,28 +153,13 @@ fun CanvasActivity(viewModel: CanvasViewModel,
                 Slider(
                     value = brushSize,
                     onValueChange = { brushSize = it },
-                    valueRange = 5f..50f,
-                    modifier = Modifier.weight(2f)
+                    valueRange = 5f..100f
                 )
-                Button(
-                    onClick = {
-                        // Prevents empty canvas from getting downloaded
-                        if (paths.isNotEmpty()) {
-                            val bitmap = generateBitmapFromPaths(paths, canvasSize.width, canvasSize.height)
-                            viewModel.saveBitmapToInternalStorage(bitmap, context)
-                        }
-                    },
-                    modifier = Modifier.width(72.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.downloadicon),
-                        contentDescription = "Download"
-                    )
-                }
             }
         }
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .onGloballyPositioned { coordinates ->
                     val height = coordinates.size.height - navBarHeight
                     val width = coordinates.size.width

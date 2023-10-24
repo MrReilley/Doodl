@@ -1,10 +1,12 @@
 package com.example.doodl.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.navigation.NavController
@@ -43,7 +46,8 @@ fun RegistrationScreen(navController: NavController? = null) {
                     }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Navigate Up")
                     }
-                }
+                },
+                backgroundColor = MaterialTheme.colorScheme.primary
             )
         }
     ) { innerPadding ->
@@ -54,7 +58,8 @@ fun RegistrationScreen(navController: NavController? = null) {
             modifier = Modifier
                 .fillMaxSize() // Make column take up all available space.
                 .padding(innerPadding) // Apply padding provided by Scaffold to avoid overlap with TopAppBar.
-                .padding(16.dp), // Additional padding for visual spacing around the content.
+                .background(MaterialTheme.colorScheme.tertiary)
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally, // Horizontally center child composables.
             verticalArrangement = Arrangement.Center // Vertically arrange children with center alignment.
         ) {
@@ -69,7 +74,12 @@ fun RegistrationScreen(navController: NavController? = null) {
                 value = email,
                 onValueChange = { email = it }, // Update the email variable when text changes.
                 label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.Black,
+                    cursorColor = MaterialTheme.colorScheme.secondary
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp)) // Provide vertical spacing.
@@ -81,7 +91,12 @@ fun RegistrationScreen(navController: NavController? = null) {
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.Black,
+                    cursorColor = MaterialTheme.colorScheme.secondary
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp)) // Provide vertical spacing.
@@ -93,7 +108,12 @@ fun RegistrationScreen(navController: NavController? = null) {
                 label = { Text("Confirm Password") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.Black,
+                    cursorColor = MaterialTheme.colorScheme.secondary
+                )
             )
 
             Spacer(modifier = Modifier.height(24.dp)) // Provide vertical spacing.
@@ -113,7 +133,9 @@ fun RegistrationScreen(navController: NavController? = null) {
                         }
                     }
                 }
-            }) {
+            },
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
+            {
                 Text("Register")
             }
         }
