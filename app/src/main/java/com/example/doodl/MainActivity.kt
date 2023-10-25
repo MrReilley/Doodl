@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                             startDestination = userLoggedIn,
                         ) {
                             composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
-                            composable("registrationScreen") { RegistrationScreen(navController) }
+                            composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }
                             composable("canvas") { CanvasScreen(navBarHeight) }
                             composable("feed") { FeedScreen() }
                         }

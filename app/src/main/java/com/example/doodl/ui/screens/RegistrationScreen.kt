@@ -61,9 +61,10 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    val repository = AuthRepository()  // Or obtain it from another source if needed
-    val factory = AuthViewModelFactory(repository)
-    val authViewModel: AuthViewModel = viewModel(factory = factory)
+    // Obtain the ViewModel
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(AuthRepository()))
+    // Observe the LiveData
+    val authState by authViewModel.authState.observeAsState()
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
@@ -201,40 +202,39 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
             {
                 Text("Register")
             }
-            AuthStateNavigation(authViewModel, navController, hasNavigated) {
+            AuthStateNavigation(authState, navController, hasNavigated, {
                 hasNavigated = true
-            }
+            }, activity, authViewModel)
         }
     }
 }
 
 @Composable
 fun AuthStateNavigation(
-    authViewModel: AuthViewModel,
-    navController: NavController? = null,
+    authState: AuthState?,
+    navController: NavController?,
     hasNavigated: Boolean,
-    onSuccessfulNavigation: () -> Unit
+    onSuccessfulNavigation: () -> Unit,
+    activity: ComponentActivity?,
+    authViewModel: AuthViewModel
 ) {
-    val authState by authViewModel.authState.observeAsState()
     when (authState) {
         is AuthState.Success -> {
             if (!hasNavigated) {
                 navController?.navigate("feed") {
-                    popUpTo(navController.graph.startDestinationId) {
-                        inclusive = true
-                    }
+                    popUpTo("loginScreen") { inclusive = true }
                 }
                 onSuccessfulNavigation()
-                // reset authState to avoid re-triggering
+                // reset authState to avoid re-triggering.
                 authViewModel.resetAuthState()
             }
         }
         is AuthState.Error -> {
-            // Handle the error here, for instance, show a Snackbar or Toast
-            // Make sure to reset authState to avoid re-triggering
-            authViewModel.resetAuthState()
+            // Show a SnackBar, Toast, or any other indication of the error here.
+            val errorMessage = (authState).message
+            Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
         }
-        else -> { /* Handle other cases if needed */ }
+        null -> {} // Handle any default state or initialization state here, if needed.
     }
 }
 
