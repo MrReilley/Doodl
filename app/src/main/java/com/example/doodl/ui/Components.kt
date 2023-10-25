@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,10 +29,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
+import com.example.doodl.R
 
 // Composable functions for reusable UI components
 
@@ -41,16 +44,26 @@ fun drawCanvas(paths: List<Triple<List<Offset>, Color, Float>>,
                selectedColor: Color,
                brushSize: Float) {
     Canvas(Modifier.fillMaxSize()) {
+        drawRect(color = Color.White, size = size)
         // Redraws previous canvas paths user has completed drawing to ensure all paths reapper if UI updates
         // For each path in paths, spilt it into offsets, Color
         paths.forEach { (offsets, color, pathBrushSize) ->
+            val isEraser = (color == Color.White)
             val graphicalPath = Path().apply {
                 // Sets start point to first offset in list
                 moveTo(offsets.first().x, offsets.first().y)
                 // For each offset in path, draw a line to the next point
                 offsets.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(path = graphicalPath, color = color, style = Stroke(width = pathBrushSize, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(
+                path = graphicalPath,
+                color = color,
+                style = Stroke(
+                    width = pathBrushSize,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
         }
         // Draws canvas path currently being drawn if there is an active path
         if (currentPath.isNotEmpty()) {
@@ -60,13 +73,22 @@ fun drawCanvas(paths: List<Triple<List<Offset>, Color, Float>>,
                 // For each offset in currentPath, draw a line to the next point
                 currentPath.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(path = activeGraphicalPath, color = selectedColor, style = Stroke(width = brushSize, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(
+                path = activeGraphicalPath,
+                color = selectedColor,
+                style = Stroke(
+                    width = brushSize,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
         }
     }
 }
 
 @Composable
-fun colorButton(selectedColor: Color, color: Color, onClick: () -> Unit) {
+fun colorButton(selectedColor: Color,
+                color: Color, onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
@@ -76,14 +98,41 @@ fun colorButton(selectedColor: Color, color: Color, onClick: () -> Unit) {
                     2.dp,
                     Color.White,
                     CircleShape
-                )
+                ).background(Color.Gray.copy(alpha = 0.4f), CircleShape)
                 else Modifier
             )
     ) {}
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modifier,  onHeightCalculated: (Int) -> Unit) {
+fun eraserButton(
+    selectedTool: Color,
+    onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .background(Color.White, CircleShape)
+            .then(
+                if (selectedTool == Color.White) Modifier.border(
+                    2.dp,
+                    Color.White,
+                    CircleShape
+                ).background(Color.Gray.copy(alpha = 0.4f), CircleShape)
+                else Modifier
+            )
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.eraser),
+            contentDescription = "Eraser",
+            tint = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun BottomNavigationBar(navController: NavController,
+                        modifier: Modifier = Modifier,
+                        onHeightCalculated: (Int) -> Unit) {
     // Remember the last height of the BottomNavigation; initialized to -1 as a placeholder value
     var lastHeight by remember { mutableStateOf(-1)}
     BottomNavigation(
@@ -110,12 +159,11 @@ fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modif
             selected = navController.currentDestination?.route == "canvas",
             onClick = { navController.navigate("canvas") }
         )
-        // Logout button
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Logout") },
-            label = { Text("Logout") },
-            selected = false,  // This button doesn't have a "selected" state
-            onClick = { logout(navController) }
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            label = { Text("Profile") },
+            selected = navController.currentDestination?.route == "profile",
+            onClick = { navController.navigate("profile") }
         )
     }
 }
