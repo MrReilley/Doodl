@@ -3,6 +3,7 @@ package com.example.doodl.data.repository
 import android.util.Log
 import com.example.doodl.data.DoodlUser
 import com.example.doodl.viewmodel.LoginState
+import com.example.doodl.viewmodel.RegistrationState
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.firebase.auth.FirebaseAuth
@@ -15,46 +16,25 @@ class AuthRepository {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    fun register(email: String, password: String): Task<Void> {
-        val registerTask = TaskCompletionSource<Void>()
-        auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val firebaseUser = auth.currentUser
-                if (firebaseUser != null) {
-                    generateUniqueUsername().addOnSuccessListener { uniqueUsername ->
-                        val user = DoodlUser(firebaseUser.uid, uniqueUsername, null, "DefaultBio")
-                        firestore.collection("users").document(firebaseUser.uid).set(user).addOnCompleteListener { firestoreTask ->
-                            if (firestoreTask.isSuccessful) {
-                                registerTask.setResult(null)
-                            } else {
-                                firestoreTask.exception?.let {
-                                    registerTask.setException(it)
-                                } ?: run {
-                                    registerTask.setException(Exception("Unknown error during Firestore write operation"))
-                                }
-                                Log.e("FirestoreError", "Error writing to Firestore: ${firestoreTask.exception?.message}")
-                            }
-                        }
-
-                    }.addOnFailureListener { exception ->
-                        registerTask.setException(exception)
-                        Log.e("UsernameError", "Error generating unique username: ${exception.message}")
-                    }
-                } else {
-                    registerTask.setException(Exception("User creation was successful but user is null"))
-                    Log.e("AuthError", "User creation was successful but user is null")
-                }
+    suspend fun register(email: String, password: String): RegistrationState {
+        return try {
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = authResult.user
+            if (firebaseUser != null) {
+                val uniqueUsername = generateUniqueUsername().await()
+                val user = DoodlUser(firebaseUser.uid, uniqueUsername, null, "DefaultBio")
+                firestore.collection("users").document(firebaseUser.uid).set(user).await()
+                RegistrationState.Success
             } else {
-                task.exception?.let {
-                    registerTask.setException(it)
-                } ?: run {
-                    registerTask.setException(Exception("Unknown error during authentication"))
-                }
-                Log.e("AuthError", "Error creating user with Firebase Auth: ${task.exception?.message}")
+                Log.e("AuthError", "User creation was successful but user is null")
+                RegistrationState.Error("User creation was successful but user is null")
             }
+        } catch (e: Exception) {
+            Log.e("AuthError", "Error during registration: ${e.message}")
+            RegistrationState.Error(e.message ?: "An error occurred during registration.")
         }
-        return registerTask.task
     }
+
 
 
     suspend fun login(email: String, password: String): LoginState {

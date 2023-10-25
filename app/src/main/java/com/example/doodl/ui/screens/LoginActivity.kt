@@ -4,32 +4,52 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.doodl.data.repository.AuthRepository
+import com.example.doodl.ui.containsLetterAndNumber
+import com.example.doodl.ui.isValidEmail
 import com.example.doodl.viewmodel.AuthState
 import com.example.doodl.viewmodel.AuthViewModel
 import com.example.doodl.viewmodel.AuthViewModelFactory
+
 
 @Composable
 fun LoginScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
@@ -44,6 +64,9 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
     val authState by authViewModel.authState.observeAsState()
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
+    val focusManager = LocalFocusManager.current
+    val emailFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
 
     // Handle back button press in LoginScreen
     BackHandler {
@@ -76,7 +99,19 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 value = email,
                 onValueChange = { email = it },  // Update the email state when the text changes.
                 label = { Text("Email") },  // Label that appears when the field is empty and shrinks when text is entered.
-                modifier = Modifier.fillMaxWidth(), // Make the text field as wide as possible within the Column.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(emailFocusRequester), // Assign the focus requester
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { // Use onNext action for email
+                        passwordFocusRequester.requestFocus() // Move focus to password field
+                        loginInputValidation(email, password, authViewModel, activity)
+                    }
+                ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.secondary,
                     focusedLabelColor = Color.Black,
@@ -90,11 +125,22 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             // Input field for password, visually obscuring the text.
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },  // Update the password state when text changes.
+                onValueChange = { password = it },
                 label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),  // Make the text field as wide as possible within the Column.
-                visualTransformation = PasswordVisualTransformation(),  // Visual transformation to obscure password input.
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),  // Set keyboard type to password to aid user input.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(passwordFocusRequester), // Assign the focus requester
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus() // Clear the focus
+                        loginInputValidation(email, password, authViewModel, activity)
+                    }
+                ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.secondary,
                     focusedLabelColor = Color.Black,
@@ -163,14 +209,14 @@ fun LoginStateNavigation(
                 navController?.navigate("feed") {
                     popUpTo("loginScreen") { inclusive = true }
                 }
-                onSuccessfulNavigation()  // This lambda will be responsible for setting hasNavigated to true.
+                onSuccessfulNavigation()
                 // reset authState to avoid re-triggering.
                 authViewModel.resetAuthState()
             }
         }
         is AuthState.Error -> {
             // Show a SnackBar, Toast, or any other indication of the error here.
-            val errorMessage = (authState as AuthState.Error).message
+            val errorMessage = (authState).message
             Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
         }
         null -> {} // Handle any default state or initialization state here, if needed.
@@ -183,17 +229,17 @@ fun loginInputValidation(
     authViewModel: AuthViewModel,
     activity: ComponentActivity?  // If you want to show Toast messages, you'll need a context.
 ) {
-    // Sample logic: navigate if email and password are not empty (modify as per your requirement)
     if(email.isNotEmpty() && password.isNotEmpty()) {
-        // After successfully logging in, navigate to your main screen.
-        if(password.length >= 6) {
-            authViewModel.login(email, password) // Call ViewModel method
-        } else {
-            // Show feedback to user that password is too short.
+        if(!isValidEmail(email)) {
+            Toast.makeText(activity, "Invalid email format!", Toast.LENGTH_SHORT).show()
+        } else if(password.length < 6) {
             Toast.makeText(activity, "Password is too short!", Toast.LENGTH_SHORT).show()
+        } else if(!containsLetterAndNumber(password)) {
+            Toast.makeText(activity, "Password must contain both letters and numbers!", Toast.LENGTH_SHORT).show()
+        } else {
+            authViewModel.login(email, password) // Call ViewModel method
         }
     } else {
-        // Show feedback to user if conditions aren't met ("Please check your input fields.").
         Toast.makeText(activity, "Please check your input fields.", Toast.LENGTH_SHORT).show()
     }
 }

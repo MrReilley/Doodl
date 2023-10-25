@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -21,7 +22,6 @@ import com.example.doodl.ui.screens.CanvasScreen
 import com.example.doodl.ui.screens.FeedScreen
 import com.example.doodl.ui.screens.LoginScreen
 import com.example.doodl.ui.screens.RegistrationScreen
-import androidx.compose.runtime.setValue
 import com.example.doodl.ui.theme.DoodlTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
-            "feed" // whichever screen you want to show for logged-in users
+            "feed"
         } else {
             "loginScreen"
         }

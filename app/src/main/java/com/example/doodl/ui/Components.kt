@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import java.util.regex.Pattern
 
 // Composable functions for reusable UI components
 
@@ -124,4 +125,17 @@ fun logout(navController: NavController) {
     navController.navigate("loginScreen") {
         popUpTo("loginScreen") { inclusive = true }
     }
+}
+
+fun isValidEmail(email: String): Boolean {
+    val emailRegex = Pattern.compile(
+        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$"
+    )
+    return emailRegex.matcher(email).matches()
+}
+
+fun containsLetterAndNumber(password: String): Boolean {
+    val hasLetter = password.any { it.isLetter() }
+    val hasDigit = password.any { it.isDigit() }
+    return hasLetter && hasDigit
 }
