@@ -98,7 +98,7 @@ fun ImageFeed(images: List<Bitmap>) {
                         // Style modifiers to control the layout and appearance of the image
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(0.59f) // changed aspect ratio (Old A.R: 1)
+                            .aspectRatio(0.68f) // changed aspect ratio (Old A.R: 1)
                             .padding(8.dp),
                         contentScale = ContentScale.Crop
                     )

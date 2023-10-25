@@ -77,7 +77,7 @@ fun ProfileScreen(navController: NavController? = null) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(text = "")
-                Spacer(modifier = Modifier.width(130.dp))
+                Spacer(modifier = Modifier.width(140.dp))
                 Text(
                     text = "userName",
                     fontWeight = FontWeight.Bold,
@@ -99,6 +99,7 @@ fun ProfileScreen(navController: NavController? = null) {
                     }
                 )
             }
+            Spacer(modifier = Modifier.width(25.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RoundImageCard(
@@ -116,14 +117,16 @@ fun ProfileScreen(navController: NavController? = null) {
                     color = Color.Black
                 )
             }
+            Spacer(modifier = Modifier.width(25.dp))
 
             var selectedTabIndex by remember { mutableStateOf(0) }
             TabRow(
                 selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.background(Color.LightGray),
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = Color.Blue // Customize the indicator color
+                        color = Color.Blue
                     )
                 }
             ) {
@@ -148,11 +151,13 @@ fun ProfileScreen(navController: NavController? = null) {
             }
             when (selectedTabIndex) {
                 0 -> {
+                    Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ProfilePosts(images = images.value)
                     }
                 }
                 1 -> {
+                    Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ProfilePosts(images = images.value)
                     }
