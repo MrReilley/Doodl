@@ -10,6 +10,7 @@ import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -156,6 +156,12 @@ fun BottomNavigationBar(navController: NavController,
             label = { Text("Canvas") },
             selected = navController.currentDestination?.route == "canvas",
             onClick = { navController.navigate("canvas") }
+        )
+        BottomNavigationItem(
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            label = { Text("Profile") },
+            selected = navController.currentDestination?.route == "profile",
+            onClick = { navController.navigate("profile") }
         )
     }
 }
