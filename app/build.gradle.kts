@@ -99,6 +99,9 @@ dependencies {
     implementation ("com.google.android.material:material:1.10.0")
     implementation ("androidx.compose.material:material:1.5.3")
 
+    // Color Picker
+    implementation("com.github.skydoves:colorpicker-compose:1.0.5")
+
 
 
 }
