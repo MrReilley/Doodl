@@ -13,8 +13,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +39,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import java.util.regex.Pattern
 import com.example.doodl.R
 
 // Composable functions for reusable UI components
@@ -183,7 +187,6 @@ fun eraserButton(
     }
 }
 
-
 @Composable
 fun BottomNavigationBar(navController: NavController,
                         modifier: Modifier = Modifier,
@@ -214,5 +217,31 @@ fun BottomNavigationBar(navController: NavController,
             selected = navController.currentDestination?.route == "canvas",
             onClick = { navController.navigate("canvas") }
         )
+        BottomNavigationItem(
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            label = { Text("Profile") },
+            selected = navController.currentDestination?.route == "profile",
+            onClick = { navController.navigate("profile") }
+        )
     }
+}
+
+fun logout(navController: NavController) {
+    FirebaseAuth.getInstance().signOut()
+    navController.navigate("loginScreen") {
+        popUpTo("loginScreen") { inclusive = true }
+    }
+}
+
+fun isValidEmail(email: String): Boolean {
+    val emailRegex = Pattern.compile(
+        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$"
+    )
+    return emailRegex.matcher(email).matches()
+}
+
+fun containsLetterAndNumber(password: String): Boolean {
+    val hasLetter = password.any { it.isLetter() }
+    val hasDigit = password.any { it.isDigit() }
+    return hasLetter && hasDigit
 }

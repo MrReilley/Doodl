@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.doodl.data.Repository
+import com.example.doodl.data.repository.Repository
 import java.io.ByteArrayOutputStream
 
 // A ViewModel is a component used to store and manage UI-related data in a way that survives configuration changes
