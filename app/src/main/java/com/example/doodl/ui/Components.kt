@@ -1,13 +1,19 @@
 package com.example.doodl.ui
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -16,11 +22,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -31,21 +39,24 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import java.util.regex.Pattern
 import com.example.doodl.R
 
 // Composable functions for reusable UI components
 
 @Composable
-fun drawCanvas(paths: List<Triple<List<Offset>, Color, Float>>,
-               currentPath: List<Offset>,
-               selectedColor: Color,
-               brushSize: Float) {
+fun drawCanvas(
+    paths: List<Triple<List<Offset>, Color, Float>>,
+    currentPath: List<Offset>,
+    selectedColor: Color,
+    brushSize: Float
+) {
     Canvas(Modifier.fillMaxSize()) {
         drawRect(color = Color.White, size = size)
         // Redraws previous canvas paths user has completed drawing to ensure all paths reapper if UI updates
         // For each path in paths, spilt it into offsets, Color
         paths.forEach { (offsets, color, pathBrushSize) ->
-            val isEraser = (color == Color.White)
             val graphicalPath = Path().apply {
                 // Sets start point to first offset in list
                 moveTo(offsets.first().x, offsets.first().y)
@@ -83,49 +94,98 @@ fun drawCanvas(paths: List<Triple<List<Offset>, Color, Float>>,
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun colorButton(selectedColor: Color,
-                color: Color, onClick: () -> Unit) {
-    IconButton(
-        onClick = onClick,
+fun colorButton(
+    selectedButtonId: String,
+    buttonId: String,
+    buttonColor: Color,
+    onClick: () -> Unit,
+    currentColorButton: MutableState<Color?>,
+    isColorPickerVisible: MutableState<Boolean>,
+    updateSelectedButtonId: (String) -> Unit
+) {
+    Box(
         modifier = Modifier
-            .background(color, CircleShape)
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(
+                color = buttonColor,
+                shape = CircleShape
+            )
             .then(
-                if (selectedColor == color) Modifier.border(
-                    2.dp,
-                    Color.White,
-                    CircleShape
-                ).background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                else Modifier
+                when {
+                    // Color picker is not visible, and this button is selected
+                    (!isColorPickerVisible.value && selectedButtonId == buttonId) -> {
+                        Modifier.border(2.dp, Color.White, CircleShape)
+                    }
+                    // Color picker is visible and this button is selected
+                    (isColorPickerVisible.value && selectedButtonId == buttonId) -> {
+                        Modifier.border(2.dp, Color.White, CircleShape)
+                    }
+                    // Color picker is visible and this button is not selected
+                    (isColorPickerVisible.value && selectedButtonId != buttonId) -> {
+                        Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
+                    } else -> {
+                        Modifier
+                    }
+                }
+            )
+            .combinedClickable(
+                onClick = {
+                    // If color picker is not visible OR color picker is visible and this button is the selected one
+                    if (!isColorPickerVisible.value || (isColorPickerVisible.value && selectedButtonId == buttonId)) {
+                        onClick()
+                    }
+                },
+                onLongClick = {
+                    // If color picker is not visible OR color picker is visible and this button is the selected one
+                    if (!isColorPickerVisible.value || (isColorPickerVisible.value && selectedButtonId == buttonId)) {
+                        currentColorButton.value = buttonColor
+                        isColorPickerVisible.value = true
+                        updateSelectedButtonId(buttonId)
+                    }
+                }
             )
     ) {}
 }
 
 @Composable
 fun eraserButton(
-    selectedTool: Color,
-    onClick: () -> Unit) {
+    selectedButtonId: String,
+    onClick: () -> Unit,
+    isColorPickerVisible: MutableState<Boolean>
+) {
+    val isEraserActive = selectedButtonId == "eraserButton"
     IconButton(
-        onClick = onClick,
+        onClick = {
+            if (!isColorPickerVisible.value) {
+                onClick()
+            }
+        },
         modifier = Modifier
             .background(Color.White, CircleShape)
             .then(
-                if (selectedTool == Color.White) Modifier.border(
-                    2.dp,
-                    Color.White,
-                    CircleShape
-                ).background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                else Modifier
+                when {
+                    // Eraser is active, and color picker is not visible
+                    (isEraserActive && !isColorPickerVisible.value) -> {
+                        Modifier.border(2.dp, Color.White, CircleShape)
+                    }
+                    // Color picker is visible
+                    isColorPickerVisible.value -> {
+                        Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
+                    } else -> {
+                        Modifier
+                    }
+                }
             )
     ) {
         Icon(
             painter = painterResource(id = R.drawable.eraser),
-            contentDescription = "Eraser",
-            tint = Color.Gray
+            contentDescription = "Eraser"
         )
     }
 }
-
 
 @Composable
 fun BottomNavigationBar(navController: NavController,
@@ -164,4 +224,24 @@ fun BottomNavigationBar(navController: NavController,
             onClick = { navController.navigate("profile") }
         )
     }
+}
+
+fun logout(navController: NavController) {
+    FirebaseAuth.getInstance().signOut()
+    navController.navigate("loginScreen") {
+        popUpTo("loginScreen") { inclusive = true }
+    }
+}
+
+fun isValidEmail(email: String): Boolean {
+    val emailRegex = Pattern.compile(
+        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$"
+    )
+    return emailRegex.matcher(email).matches()
+}
+
+fun containsLetterAndNumber(password: String): Boolean {
+    val hasLetter = password.any { it.isLetter() }
+    val hasDigit = password.any { it.isDigit() }
+    return hasLetter && hasDigit
 }

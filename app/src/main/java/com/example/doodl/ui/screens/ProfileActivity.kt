@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,12 +44,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.doodl.R
-import com.example.doodl.data.Repository
+import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavController? = null) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
@@ -88,7 +91,12 @@ fun ProfileScreen() {
                     text = "logout",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = Color.Blue
+                    color = Color.Blue,
+                    modifier = Modifier.clickable {
+                        if (navController != null) {
+                            logout(navController)
+                        }
+                    }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
