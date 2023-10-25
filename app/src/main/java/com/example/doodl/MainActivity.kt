@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                             composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }
                             composable("canvas") { CanvasScreen(navBarHeight) }
                             composable("feed") { FeedScreen() }
-                            composable("profile") { ProfileScreen() }
+                            composable("profile") { ProfileScreen(navController) }
                         }
 
                         // Bottom Navigation Bar
