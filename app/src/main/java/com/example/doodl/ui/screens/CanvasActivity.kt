@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.doodl.R
-import com.example.doodl.data.Repository
+import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.colorButton
 import com.example.doodl.ui.drawCanvas
 import com.example.doodl.ui.eraserButton
