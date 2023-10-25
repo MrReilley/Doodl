@@ -22,11 +22,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +62,6 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(AuthRepository()))
     // Observe the LiveData
     val authState by authViewModel.authState.observeAsState()
-    var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val emailFocusRequester = remember { FocusRequester() }
@@ -70,6 +69,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
 
     // Handle back button press in LoginScreen
     BackHandler {
+        authViewModel.resetAuthState()
         // Close the app
         activity?.finish()
     }
@@ -98,7 +98,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },  // Update the email state when the text changes.
-                label = { Text("Email") },  // Label that appears when the field is empty and shrinks when text is entered.
+                label = { Text("Email") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(emailFocusRequester), // Assign the focus requester
@@ -109,7 +109,6 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 keyboardActions = KeyboardActions(
                     onNext = { // Use onNext action for email
                         passwordFocusRequester.requestFocus() // Move focus to password field
-                        loginInputValidation(email, password, authViewModel, activity)
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -119,7 +118,6 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 )
             )
 
-            // Provide a vertical space of 16dp.
             Spacer(modifier = Modifier.height(16.dp))
 
             // Input field for password, visually obscuring the text.
@@ -148,12 +146,9 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 )
             )
 
-            // Provide a vertical space of 24dp.
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Button which triggers login logic when clicked.
             Button(onClick = {
-                // TODO: Implement login logic here. Currently only handles password >= 6
                 // On successful login, navigate to canvas.
                 loginInputValidation(email, password, authViewModel, activity)
             },
@@ -172,24 +167,21 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
         ) {
             // Text Composable for informing users they can register.
             Text("Don't have an account?",
-                modifier = Modifier.align(Alignment.CenterVertically)  // Vertically center align the text within the Row.
+                modifier = Modifier.align(Alignment.CenterVertically)
             )
 
-            // Provide a horizontal space of 8dp.
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Button which navigates to the registration screen when clicked.
             Button(
                 onClick = {
-                navController?.navigate("registrationScreen")  // Use NavController to navigate to the registration screen.
-            },
+                    authViewModel.resetAuthState()  // Reset the state here
+                    navController?.navigate("registrationScreen")
+                },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
                 Text("Register")
             }
-            LoginStateNavigation(authState, navController, hasNavigated, {
-                hasNavigated = true
-            }, activity, authViewModel)
+            LoginStateNavigation(authState, navController, activity, authViewModel)
         }
     }
 }
@@ -198,28 +190,26 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
 fun LoginStateNavigation(
     authState: AuthState?,
     navController: NavController?,
-    hasNavigated: Boolean,
-    onSuccessfulNavigation: () -> Unit,
     activity: ComponentActivity?,
     authViewModel: AuthViewModel
 ) {
-    when (authState) {
-        is AuthState.Success -> {
-            if (!hasNavigated) {
+    // LaunchedEffect to prevent re-triggering events.
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
                 navController?.navigate("feed") {
                     popUpTo("loginScreen") { inclusive = true }
                 }
-                onSuccessfulNavigation()
                 // reset authState to avoid re-triggering.
                 authViewModel.resetAuthState()
             }
+            is AuthState.Error -> {
+                // Show a SnackBar, Toast, or any other indication of the error here.
+                val errorMessage = (authState).message
+                Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+            null -> {} // Handle any default state or initialization state here, if needed.
         }
-        is AuthState.Error -> {
-            // Show a SnackBar, Toast, or any other indication of the error here.
-            val errorMessage = (authState).message
-            Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
-        }
-        null -> {} // Handle any default state or initialization state here, if needed.
     }
 }
 

@@ -114,7 +114,7 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
             // This one is for user's email input.
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it }, // Update the email variable when text changes.
+                onValueChange = { email = it },
                 label = { Text("Email") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,7 +135,7 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp)) // Provide vertical spacing.
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Text field for user's password input, visually obscuring the input.
             OutlinedTextField(
@@ -194,15 +194,13 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
 
             // Button that, when clicked, performs registration logic.
             Button(onClick = {
-                // TODO: Implement registration logic here.
-                // On successful registration, navigate to canvas screen.
                 registrationInputValidation(email, password, confirmPassword, authViewModel, activity)
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
                 Text("Register")
             }
-            AuthStateNavigation(authState, navController, hasNavigated, {
+            RegistrationStateNavigation(authState, navController, hasNavigated, {
                 hasNavigated = true
             }, activity, authViewModel)
         }
@@ -210,7 +208,7 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
 }
 
 @Composable
-fun AuthStateNavigation(
+fun RegistrationStateNavigation(
     authState: AuthState?,
     navController: NavController?,
     hasNavigated: Boolean,

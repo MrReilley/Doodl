@@ -24,8 +24,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                     _authState.value = AuthState.Error(registerResult.message)
                 }
                 is RegistrationState.Loading -> {
-                    // Handle the loading state if necessary.
-                    // You might want to show a progress bar in the UI or similar.
+                    // We can show a progress bar in the UI.
                 }
             }
         }
@@ -42,16 +41,14 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                     _authState.value = AuthState.Error(loginResult.message)
                 }
                 is LoginState.Loading -> {
-                    // Handle the loading state if necessary
-                    // For example, you might want to show a progress bar in the UI
+                    // We can show a progress bar in the UI
                 }
             }
         }
     }
 
-
     fun resetAuthState() {
-        _authState.value = null // Or some neutral state if you wish
+        _authState.value = null
     }
 
 }
