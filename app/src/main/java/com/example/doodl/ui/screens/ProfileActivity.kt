@@ -60,9 +60,12 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()
+        feedViewModel.fetchUserName(userId)
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
+    val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -79,7 +82,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 Text(text = "")
                 Spacer(modifier = Modifier.width(140.dp))
                 Text(
-                    text = "userName",
+                    text = userName,
                     fontWeight = FontWeight.Bold,
                     fontSize = 30.sp,
                     overflow = TextOverflow.Ellipsis,

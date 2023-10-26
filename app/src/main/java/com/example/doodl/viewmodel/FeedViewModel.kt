@@ -22,6 +22,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     // LiveData to hold a list of Bitmap images from Firebase.
     private val newImages = MutableLiveData<List<Bitmap>>()
     val liveImages: LiveData<List<Bitmap>> = newImages
+    val userName = MutableLiveData<String>()
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchImages() {
@@ -48,7 +49,18 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         })
     }
 
+    fun fetchUserName(userId: String) {
+        repository.getUserDetails(userId).addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                userName.value = document.getString("username") ?: "Anonymous"
+            } else {
+                // Handle the case where the document doesn't exist.
+            }
+        }.addOnFailureListener {
+            // Handle any errors here.
+        }
 
+    }
 }
 
 // Factory for creating FeedViewModel instances with a Repository dependency

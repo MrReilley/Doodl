@@ -3,6 +3,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -15,6 +17,7 @@ class Repository {
     //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
 
     // Function used in CanvasViewModel to upload byte array representing an image to Firebase Storage
     fun uploadByteArray(byteArray: ByteArray): UploadTask {
@@ -24,8 +27,6 @@ class Repository {
         // Upload byte array to Firebase Storage reference
         return fileRef.putBytes(byteArray)
     }
-
-
 
     fun downloadImage(imagePath: String): Task<Bitmap> {
         // Get a reference to the image file at the specified path in Firebase Storage
@@ -59,6 +60,10 @@ class Repository {
             // Trigger onFailure callback on error
             onFailure(exception)
         }
+    }
+
+    fun getUserDetails(userId: String): Task<DocumentSnapshot> {
+        return db.collection("users").document(userId).get()
     }
 
 }
