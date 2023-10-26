@@ -2,6 +2,7 @@ package com.example.doodl.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -13,14 +14,18 @@ class Repository {
 
     //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
+    private val auth = FirebaseAuth.getInstance()
 
     // Function used in CanvasViewModel to upload byte array representing an image to Firebase Storage
     fun uploadByteArray(byteArray: ByteArray): UploadTask {
-        // Generate a unique file reference in Firebase Storage using the current timestamp
-        val fileRef = storageReference.child("feed/${System.currentTimeMillis()}.png")
+        // Generate a unique file reference in Firebase Storage using the userId and current timestamp
+        val userId = auth.currentUser?.uid ?: throw IllegalStateException("User must be logged in to upload")
+        val fileRef = storageReference.child("user/$userId/posts/${System.currentTimeMillis()}.png")
         // Upload byte array to Firebase Storage reference
         return fileRef.putBytes(byteArray)
     }
+
+
 
     fun downloadImage(imagePath: String): Task<Bitmap> {
         // Get a reference to the image file at the specified path in Firebase Storage

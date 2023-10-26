@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 // (like screen rotations) and is independent of the UI components (e.g. Activities). They are designed to store and manage UI-related
 // data and logic separately from the user interface. Acts as a bridge between the UI and the underlying data sources.
 
-class FeedViewModel(private val repository: Repository) : ViewModel() {
+class FeedViewModel(private val userId: String, private val repository: Repository) : ViewModel() {
     // LiveData to hold a list of Bitmap images from Firebase.
     private val newImages = MutableLiveData<List<Bitmap>>()
     val liveImages: LiveData<List<Bitmap>> = newImages
@@ -52,12 +52,12 @@ class FeedViewModel(private val repository: Repository) : ViewModel() {
 }
 
 // Factory for creating FeedViewModel instances with a Repository dependency
-class FeedViewModelFactory(private val repository: Repository) : ViewModelProvider.Factory {
+class FeedViewModelFactory(private val userId: String, private val repository: Repository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         // Check if modelClass is FeedViewModel
         if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
             // Return an instance of FeedViewModel, casting it to T
-            return FeedViewModel(repository) as T
+            return FeedViewModel(userId, repository) as T
         }
         // If modelClass isn’t FeedViewModel, throw an exception
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -45,12 +45,12 @@ import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
 @Composable
-fun FeedScreen() {
+fun FeedScreen(userId: String) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
     val repository = Repository()
-    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()

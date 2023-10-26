@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,8 +57,14 @@ class MainActivity : ComponentActivity() {
                             composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
                             composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }
                             composable("canvas") { CanvasScreen(navBarHeight) }
-                            composable("feed") { FeedScreen() }
-                            composable("profile") { ProfileScreen(navController) }
+                            composable("feed") {
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw IllegalStateException("User must be logged in to access the feed.")
+                                FeedScreen(userId)
+                            }
+                            composable("profile") {
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw IllegalStateException("User must be logged in to access the profile.")
+                                ProfileScreen(userId,navController)
+                            }
                         }
 
                         // Bottom Navigation Bar

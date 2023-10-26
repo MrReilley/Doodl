@@ -51,12 +51,12 @@ import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 @Composable
-fun ProfileScreen(navController: NavController? = null) {
+fun ProfileScreen(userId: String, navController: NavController? = null) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
     val repository = Repository()
-    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()
