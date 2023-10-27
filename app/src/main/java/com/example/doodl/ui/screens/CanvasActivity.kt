@@ -151,7 +151,7 @@ fun CanvasActivity(
                     },
                     enabled = !isColorPickerVisible.value
                 ) {
-                    Text("Next", color = Color.Black)
+                    Text("Post", color = Color.Black)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))

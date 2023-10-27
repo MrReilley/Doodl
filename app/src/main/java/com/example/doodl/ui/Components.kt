@@ -229,7 +229,10 @@ fun BottomNavigationBar(navController: NavController,
 fun logout(navController: NavController) {
     FirebaseAuth.getInstance().signOut()
     navController.navigate("loginScreen") {
-        popUpTo("loginScreen") { inclusive = true }
+        // This will clear everything on the back stack up to, but not including, "loginScreen".
+        popUpTo("loginScreen") { inclusive = false }
+        // This will clear any existing tasks so that the user cannot go back to the previous screen after logging out.
+        launchSingleTop = true
     }
 }
 

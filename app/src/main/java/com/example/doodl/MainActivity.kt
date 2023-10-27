@@ -1,6 +1,7 @@
 package com.example.doodl
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -30,8 +31,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
+            Log.d("MainActivity", "User is logged in, navigating to feed.")
             "feed"
         } else {
+            Log.d("MainActivity", "User is not logged in, navigating to loginScreen.")
             "loginScreen"
         }
         setContent {
@@ -49,21 +52,35 @@ class MainActivity : ComponentActivity() {
                     // Retrieve the current route
                     val currentRoute = backStackEntry?.destination?.route
 
+                    Log.d("MainActivity", "Current route: $currentRoute")
+
                     Box(Modifier.fillMaxSize()) {
                         NavHost(
                             navController = navController,
                             startDestination = userLoggedIn,
                         ) {
-                            composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
-                            composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }
-                            composable("canvas") { CanvasScreen(navBarHeight) }
+                            composable("loginScreen") {
+                                Log.d("MainActivity", "Navigating to loginScreen")
+                                LoginScreen(navController, this@MainActivity) }
+                            composable("registrationScreen") {
+                                Log.d("MainActivity", "Navigating to registrationScreen")
+                                RegistrationScreen(navController, this@MainActivity) }
+                            composable("canvas") {
+                                Log.d("MainActivity", "Navigating to canvas")
+                                CanvasScreen(navBarHeight) }
                             composable("feed") {
-                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw IllegalStateException("User must be logged in to access the feed.")
+                                Log.d("MainActivity", "Navigating to feed")
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                    ?: throw IllegalStateException("User must be logged in to access the feed.")
                                 FeedScreen(userId)
                             }
                             composable("profile") {
-                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw IllegalStateException("User must be logged in to access the profile.")
-                                ProfileScreen(userId,navController)
+                                val currentUser = FirebaseAuth.getInstance().currentUser
+                                if (currentUser == null) {
+                                    navController.navigate("loginScreen")
+                                } else {
+                                    ProfileScreen(currentUser.uid, navController)
+                                }
                             }
                         }
 

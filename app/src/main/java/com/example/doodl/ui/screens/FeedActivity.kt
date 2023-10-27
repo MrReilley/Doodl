@@ -39,7 +39,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.doodl.R
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -51,23 +54,26 @@ fun FeedScreen(userId: String) {
     }
     val repository = Repository()
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
+    val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
+
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchImages()
+        //feedViewModel.fetchImages()
+        feedViewModel.fetchNewestPosts()
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
-    ImageFeed(images.value)
+    ImageFeed(newestPosts)
 }
 
 @Composable
-fun ImageFeed(images: List<Bitmap>) {
+fun ImageFeed(posts: List<Post>) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
 
     // Display a vertical list of images.
     LazyColumn {
-        items(images) { image ->
+        items(posts) { post ->
             // For each image, create an Image composable
             // background of feed
             Column(
@@ -93,7 +99,7 @@ fun ImageFeed(images: List<Bitmap>) {
                     }
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it
-                        painter = BitmapPainter(image.asImageBitmap()), // null implies decorative image (no alt text)
+                        painter = rememberAsyncImagePainter(post.imagePath), // Use Coil to load image from URL
                         contentDescription = null,
                         // Style modifiers to control the layout and appearance of the image
                         modifier = Modifier

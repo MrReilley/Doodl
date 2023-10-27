@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,7 +22,11 @@ import kotlinx.coroutines.withContext
 class FeedViewModel(private val userId: String, private val repository: Repository) : ViewModel() {
     // LiveData to hold a list of Bitmap images from Firebase.
     private val newImages = MutableLiveData<List<Bitmap>>()
+    private val _newestPosts = MutableLiveData<List<Post>>()
+
     val liveImages: LiveData<List<Bitmap>> = newImages
+    val newestPosts: LiveData<List<Post>> get() = _newestPosts
+
     val userName = MutableLiveData<String>()
     val userBio = MutableLiveData<String?>()
     val profilePic = MutableLiveData<Bitmap?>()
@@ -99,6 +104,24 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             // Handle any errors here.
         }
     }
+    fun fetchNewestPosts() {
+        repository.getNewestPosts().addOnSuccessListener { querySnapshot ->
+            // Log the number of posts retrieved
+            Log.d("FeedViewModel", "Successfully fetched ${querySnapshot.size()} posts")
+
+            val posts = querySnapshot.toObjects(Post::class.java)
+
+            // Log the details of the posts (we can turn this off since it reveals sensitive data)
+            for (post in posts) {
+                Log.d("FeedViewModel", "Post Details: $post")
+            }
+
+            _newestPosts.value = posts
+        }.addOnFailureListener { exception ->
+            Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
+        }
+    }
+
 
 }
 

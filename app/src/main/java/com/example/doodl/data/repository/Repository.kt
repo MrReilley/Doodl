@@ -1,10 +1,13 @@
 package com.example.doodl.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -77,6 +80,15 @@ class Repository {
 
     fun getUserDetails(userId: String): Task<DocumentSnapshot> {
         return db.collection("users").document(userId).get()
+    }
+    fun savePostToFirestore(post: Post): Task<Void> {
+        return db.collection("posts").document(post.postId).set(post)
+    }
+    fun getNewestPosts(limit: Int = 10): Task<QuerySnapshot> {
+        return db.collection("posts")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(limit.toLong())
+            .get()
     }
 
 }
