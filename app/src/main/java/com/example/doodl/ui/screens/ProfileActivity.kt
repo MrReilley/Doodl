@@ -59,12 +59,15 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchImages()
-        feedViewModel.fetchUserName(userId)
+        feedViewModel.fetchUserImages()
+        feedViewModel.fetchUserDetails(userId)
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
     val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+    val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
+    val userBioText = feedViewModel.userBio.observeAsState(null).value
+
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -112,8 +115,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                         .padding(4.dp)
                 )
                 Text(
-                    text = "This is for the bio/description box for the template section of the profile page :)." +
-                            "I'm going to test the text wrapping now lol ewqdqdqdawdawdwadwadawddsawdawdasadawdasawdadawda",
+                    text = userBioText ?: "No bio available.",
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
                     softWrap = true,

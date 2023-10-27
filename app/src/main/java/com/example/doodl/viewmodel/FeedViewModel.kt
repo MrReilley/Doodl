@@ -23,6 +23,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val newImages = MutableLiveData<List<Bitmap>>()
     val liveImages: LiveData<List<Bitmap>> = newImages
     val userName = MutableLiveData<String>()
+    val userBio = MutableLiveData<String?>()
+    val profilePic = MutableLiveData<Bitmap?>()
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchImages() {
@@ -48,20 +50,58 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
         })
     }
+    fun fetchUserImages() {
+        repository.fetchUserImages(userId, onSuccess = { imagePaths ->
+            viewModelScope.launch {
+                val bitmaps = imagePaths.mapNotNull { path ->
+                    withContext(Dispatchers.IO) {
+                        try {
+                            repository.downloadImage(path).await()
+                        } catch (exception: Exception) {
+                            Log.e("FeedViewModel", "Download failed: ${exception.message}")
+                            null // Return null in case of failure
+                        }
+                    }
+                }
+                newImages.value = bitmaps
+            }
+        }, onFailure = { exception ->
+            Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
+        })
+    }
 
-    fun fetchUserName(userId: String) {
+    fun fetchUserDetails(userId: String) {
         repository.getUserDetails(userId).addOnSuccessListener { document ->
             if (document != null && document.exists()) {
                 userName.value = document.getString("username") ?: "Anonymous"
+                userBio.value = document.getString("userBio")
+
+                val profilePicPath = document.getString("profilePicPath")
+                if (profilePicPath != null) {
+                    viewModelScope.launch {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                // If profilePicPath is not null, attempt to download the profile picture
+                                val bitmap = repository.downloadImage(profilePicPath).await()
+                                profilePic.postValue(bitmap)
+                            } catch (exception: Exception) {
+                                Log.e("FeedViewModel", "Profile picture download failed: ${exception.message}")
+                            }
+                        }
+                    }
+                } else {
+                    profilePic.value = null
+                }
             } else {
                 // Handle the case where the document doesn't exist.
             }
         }.addOnFailureListener {
             // Handle any errors here.
         }
-
     }
+
 }
+
 
 // Factory for creating FeedViewModel instances with a Repository dependency
 class FeedViewModelFactory(private val userId: String, private val repository: Repository) : ViewModelProvider.Factory {

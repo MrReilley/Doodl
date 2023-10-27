@@ -14,7 +14,6 @@ import com.google.firebase.storage.UploadTask
 // Data operations, abstracting origin of data
 class Repository {
 
-    //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -58,6 +57,20 @@ class Repository {
             onSuccess(imagePaths.reversed())//.reversed will reverse
         }.addOnFailureListener { exception ->
             // Trigger onFailure callback on error
+            onFailure(exception)
+        }
+    }
+
+    fun fetchUserImages(userId: String, onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
+        // Reference to the logged-in user's images directory in Firebase storage
+        val userImagesRef = storageReference.child("user/$userId/posts")
+
+        // Retrieve all file references in the user's posts directory
+        userImagesRef.listAll().addOnSuccessListener { listResult ->
+            // Map the results to their paths and trigger the onSuccess callback
+            val imagePaths = listResult.items.map { it.path }
+            onSuccess(imagePaths.reversed()) // .reversed will reverse the list so newest images come first
+        }.addOnFailureListener { exception ->
             onFailure(exception)
         }
     }
