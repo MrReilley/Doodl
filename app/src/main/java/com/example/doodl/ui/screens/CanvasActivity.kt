@@ -32,16 +32,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.doodl.R
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.colorButton
-import com.example.doodl.ui.drawCanvas
-import com.example.doodl.ui.eraserButton
+import com.example.doodl.ui.ColorButton
+import com.example.doodl.ui.DrawCanvas
+import com.example.doodl.ui.EraserButton
 import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
@@ -171,7 +169,7 @@ fun CanvasActivity(
                     )
 
                     buttons.forEach { (buttonId, buttonColor) ->
-                        colorButton(
+                        ColorButton(
                             selectedButtonId = selectedButtonId,
                             buttonId = buttonId,
                             buttonColor = buttonColor,
@@ -184,7 +182,7 @@ fun CanvasActivity(
                             updateSelectedButtonId = updateSelectedButtonId
                         )
                     }
-                    eraserButton(selectedButtonId, {
+                    EraserButton(selectedButtonId, {
                         updateSelectedColor(Color.White)
                         updateSelectedButtonId("eraserButton")
                     }, isColorPickerVisible)
@@ -225,7 +223,7 @@ fun CanvasActivity(
                     }
             ) {
                 // Draw the canvas using paths captured from touch event handler
-                drawCanvas(paths, currentPath, selectedColor, brushSize)
+                DrawCanvas(paths, currentPath, selectedColor, brushSize)
             }
             // Color Picker
             if (isColorPickerVisible.value) {

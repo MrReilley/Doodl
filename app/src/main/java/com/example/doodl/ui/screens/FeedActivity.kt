@@ -12,14 +12,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.doodl.R
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
@@ -57,23 +58,38 @@ fun FeedScreen() {
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
-    ImageFeed(images.value)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.secondary)
+    ) {
+        ImageFeed(images.value){
+            feedViewModel.fetchImages()
+        }
+    }
 }
 
 @Composable
-fun ImageFeed(images: List<Bitmap>) {
+fun ImageFeed(images: List<Bitmap>, onRefresh: () -> Unit) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
+    val lazyListState = rememberLazyListState()
+    /*Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
-    // Display a vertical list of images.
-    LazyColumn {
+        if (lazyListState.firstVisibleItemIndex == 0 && lazyListState.isScrollInProgress) {
+            onRefresh()
+        }
+    }*/
+    LazyColumn(state = lazyListState) {
         items(images) { image ->
-            // For each image, create an Image composable
             // background of feed
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.LightGray)
+                    .background(MaterialTheme.colorScheme.secondary)
             ) {
                 Column(
                     modifier = Modifier
@@ -89,8 +105,14 @@ fun ImageFeed(images: List<Bitmap>) {
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = "userName", fontWeight = FontWeight.Bold)
+                        androidx.compose.material3.Text(text = "userName", fontWeight = FontWeight.Bold, color = Color.Black)
                     }
+                    androidx.compose.material3.Divider(
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                    )
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it
                         painter = BitmapPainter(image.asImageBitmap()), // null implies decorative image (no alt text)
@@ -101,6 +123,12 @@ fun ImageFeed(images: List<Bitmap>) {
                             .aspectRatio(0.68f) // changed aspect ratio (Old A.R: 1)
                             .padding(8.dp),
                         contentScale = ContentScale.Crop
+                    )
+                    androidx.compose.material3.Divider(
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
                     )
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         var applyColorFilter by remember { mutableStateOf(false) }
@@ -115,7 +143,6 @@ fun ImageFeed(images: List<Bitmap>) {
                             },
                             alignment = Alignment.TopEnd,
                             modifier = Modifier.clickable {
-                                // Toggle the applyColorFilter when the image is clicked
                                 applyColorFilter = !applyColorFilter
                                 if(applyColorFilter){
                                     val message = "You liked a post"
@@ -124,45 +151,29 @@ fun ImageFeed(images: List<Bitmap>) {
                                     Toast.makeText(context, message, duration).show()
                                 }else{
                                     val message = "You disliked a post"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
+                                    val duration = Toast.LENGTH_SHORT
                                     Toast.makeText(context, message, duration).show()
                                 }
                             }
                         )
-                        Text(text = "likes", modifier = Modifier.padding(start = 8.dp))
-
+                        androidx.compose.material3.Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
                         Spacer(modifier = Modifier.width(8.dp))
-
                         Image(
                             painter = painterResource(id = R.drawable.downloadicon),
                             contentDescription = "Download",
-                            modifier = Modifier.clickable {
-                                val message = "This is a fake download lol"
-                                val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                // Display a toast message using the obtained context
-                                Toast.makeText(context, message, duration).show()
-                            }.size(26.dp)
+                            modifier = Modifier
+                                .clickable {
+                                    val message = "This is a fake download lol"
+                                    val duration = Toast.LENGTH_SHORT
+                                    Toast
+                                        .makeText(context, message, duration)
+                                        .show()
+                                }
+                                .size(26.dp)
                         )
                     }
                 }
             }
         }
-    }
-}
-
-
-@Composable
-fun RoundImageCard(
-    image: Int, modifier: Modifier = Modifier
-        .padding(8.dp)
-        .size(64.dp)
-) {
-    Card(shape = CircleShape, modifier = modifier) {
-        Image(
-            painter = painterResource(id = image),
-            contentDescription = null,
-            contentScale = ContentScale.Crop
-        )
     }
 }

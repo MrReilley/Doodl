@@ -1,23 +1,21 @@
 package com.example.doodl.ui.screens
 
-import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -27,16 +25,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,9 +42,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.doodl.R
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.EditPopup
+import com.example.doodl.ui.ProfilePosts
+import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
+
 @Composable
 fun ProfileScreen(navController: NavController? = null) {
     BackHandler {
@@ -61,6 +60,9 @@ fun ProfileScreen(navController: NavController? = null) {
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()
     }
+    var profUsername by remember { mutableStateOf("userName") }
+    var profDescription by remember { mutableStateOf("This is for the bio/description box for the template section of the profile page :)." +
+            "I'm going to test the text wrapping now lol") }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
     Column(
@@ -69,7 +71,7 @@ fun ProfileScreen(navController: NavController? = null) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.LightGray)
+                .background(MaterialTheme.colorScheme.secondary)
         ){
                 // feed card layout
             Row(
@@ -77,30 +79,69 @@ fun ProfileScreen(navController: NavController? = null) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(text = "")
-                Spacer(modifier = Modifier.width(140.dp))
+                if (profUsername.length >= 14) {
+                    Spacer(modifier = Modifier.width(110.dp))
+                }else if(profUsername.length >= 20){
+                    Spacer(modifier = Modifier.width(90.dp))
+                }
+                else{
+                    Spacer(modifier = Modifier.width(140.dp))
+                }
+                val maxUsernameLength = 20
                 Text(
-                    text = "userName",
+                    text = if(profUsername.length > maxUsernameLength) {
+                        profUsername.take(maxUsernameLength)
+                    }else{
+                        profUsername
+                         },
                     fontWeight = FontWeight.Bold,
-                    fontSize = 30.sp,
+                    fontSize = if (profUsername.length >= 15) {
+                        19.sp
+                    }else if(profUsername.length >= 20){
+                        16.sp
+                    }else{
+                        30.sp
+                         },
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
-                    color = Color.Black
+                    color = Color.Black,
                 )
-                Spacer(modifier = Modifier.width(100.dp))
-                Text(
+                Spacer(modifier = Modifier.weight(0.9f))
+                EditPopup(
+                    profUsername,
+                    profDescription,
+                    onTextUpdated = { newUsername, newDescription ->
+                        profUsername = newUsername
+                        profDescription = newDescription
+                    }
+                    )
+                Spacer(modifier = Modifier.weight(0.15f))
+                Icon(
+                    imageVector = Icons.Default.ExitToApp,
+                    contentDescription = null,
+                    tint = Color.Blue,
+                    modifier = Modifier
+                        .clickable {
+                            if (navController != null) {
+                                logout(navController)
+                            }
+                        }
+                )
+                /*Text(
                     text = "logout",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = Color.Blue,
-                    modifier = Modifier.clickable {
-                        if (navController != null) {
-                            logout(navController)
+                    modifier = Modifier
+                        .clickable {
+                            if (navController != null) {
+                                logout(navController)
+                            }
                         }
-                    }
-                )
+                        .fillMaxWidth()
+                )*/
             }
             Spacer(modifier = Modifier.width(25.dp))
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RoundImageCard(
                     image = R.drawable.likeicon,
@@ -109,8 +150,7 @@ fun ProfileScreen(navController: NavController? = null) {
                         .padding(4.dp)
                 )
                 Text(
-                    text = "This is for the bio/description box for the template section of the profile page :)." +
-                            "I'm going to test the text wrapping now lol ewqdqdqdawdawdwadwadawddsawdawdasadawdasawdadawda",
+                    text = profDescription,
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
                     softWrap = true,
@@ -118,11 +158,10 @@ fun ProfileScreen(navController: NavController? = null) {
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
-
-            var selectedTabIndex by remember { mutableStateOf(0) }
+            var selectedTabIndex by remember { mutableIntStateOf(0) }
             TabRow(
                 selectedTabIndex = selectedTabIndex,
-                modifier = Modifier.background(Color.LightGray),
+                modifier = Modifier.background(Color.Black),
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
@@ -162,30 +201,6 @@ fun ProfileScreen(navController: NavController? = null) {
                         ProfilePosts(images = images.value)
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProfilePosts(images: List<Bitmap>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3)
-    ) {
-        itemsIndexed(images) { _, image ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f) // Set the aspect ratio to make images square
-                    .padding(8.dp)
-            ) {
-                Image(
-                    painter = remember { BitmapPainter(image.asImageBitmap()) },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(1.1f) // Apply the scaling factor to individual images
-                )
             }
         }
     }

@@ -101,7 +101,4 @@ dependencies {
 
     // Color Picker
     implementation("com.github.skydoves:colorpicker-compose:1.0.5")
-
-
-
 }

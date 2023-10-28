@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,7 +35,10 @@ class MainActivity : ComponentActivity() {
             "loginScreen"
         }
         setContent {
-            DoodlTheme {
+            DoodlTheme(
+                darkTheme = true,
+                dynamicColor = true
+            ) {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -65,7 +67,7 @@ class MainActivity : ComponentActivity() {
                         // Bottom Navigation Bar
                         // Only display it if currentRoute is either "canvas" ,"feed", or "profile"
                         if(currentRoute in listOf("canvas", "feed", "profile")) {
-                            BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter)) { height ->
+                            BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter), currentRoute) { height ->
                                 navBarHeight = height
                             }
                         }
