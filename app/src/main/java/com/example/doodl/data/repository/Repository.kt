@@ -3,7 +3,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
-import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -45,6 +44,15 @@ class Repository {
             val bytes = task.result
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             bitmap// Return the constructed Bitmap
+        }
+    }
+    fun fetchUsername(userId: String): Task<String?> {
+        return db.collection("users").document(userId).get().continueWith { task ->
+            if (task.isSuccessful) {
+                return@continueWith task.result?.getString("username")
+            } else {
+                throw task.exception ?: RuntimeException("Unknown error occurred")
+            }
         }
     }
 

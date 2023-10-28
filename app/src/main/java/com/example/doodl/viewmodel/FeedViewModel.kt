@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import java.util.concurrent.CountDownLatch
 
 
 // A ViewModel is a component used to store and manage UI-related data in a way that survives configuration changes
@@ -22,11 +21,9 @@ import java.util.concurrent.CountDownLatch
 
 class FeedViewModel(private val userId: String, private val repository: Repository) : ViewModel() {
     // LiveData to hold a list of Bitmap images from Firebase.
-    private val newImages = MutableLiveData<List<Bitmap>>()
     private val _newestPosts = MutableLiveData<List<Post>>()
     private val _userImageUrls = MutableLiveData<List<String>>()
 
-    val liveImages: LiveData<List<Bitmap>> = newImages
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
 
@@ -54,7 +51,6 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
         })
     }
-
 
     fun fetchUserDetails(userId: String) {
         repository.getUserDetails(userId).addOnSuccessListener { document ->
@@ -90,7 +86,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             try {
                 val posts = repository.getNewestPosts().await()
                 val updatedPosts = posts.map { post ->
-                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                    val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
+                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await(), username = username)
                 }
                 _newestPosts.value = updatedPosts
             } catch (exception: Exception) {

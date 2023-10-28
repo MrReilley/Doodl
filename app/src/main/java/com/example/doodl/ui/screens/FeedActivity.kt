@@ -1,6 +1,5 @@
 package com.example.doodl.ui.screens
 
-import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -31,8 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -40,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
@@ -61,8 +57,6 @@ fun FeedScreen(userId: String) {
         //feedViewModel.fetchImages()
         feedViewModel.fetchNewestPosts()
     }
-    // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.liveImages.observeAsState(emptyList())
     ImageFeed(newestPosts)
 }
 
@@ -95,7 +89,7 @@ fun ImageFeed(posts: List<Post>) {
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = "userName", fontWeight = FontWeight.Bold)
+                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold)
                     }
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it

@@ -29,19 +29,25 @@ class CanvasViewModel(private val repository: Repository) : ViewModel() {
                 // Get the image path
                 val imagePath = it.storage.path
 
-                // Create a Post object
-                val postId = UUID.randomUUID().toString()
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@addOnSuccessListener
-                val timestamp = System.currentTimeMillis()
-                val newPost = Post(postId, userId, timestamp, imagePath)
 
-                // Save the post to Firestore
-                repository.savePostToFirestore(newPost)
-                    .addOnSuccessListener {
-                        Log.d("CanvasViewModel", "Post saved successfully")
-                    }.addOnFailureListener { exception ->
-                        Log.e("CanvasViewModel", "Failed to save post: ${exception.message}")
-                    }
+                // Fetch username and then save post to Firestore
+                repository.fetchUsername(userId).addOnSuccessListener { username ->
+                    // Create a Post object
+                    val postId = UUID.randomUUID().toString()
+                    val timestamp = System.currentTimeMillis()
+                    val newPost = Post(postId, userId, username ?: "Anonymous", timestamp, imagePath)
+
+                    // Save the post to Firestore
+                    repository.savePostToFirestore(newPost)
+                        .addOnSuccessListener {
+                            Log.d("CanvasViewModel", "Post saved successfully")
+                        }.addOnFailureListener { exception ->
+                            Log.e("CanvasViewModel", "Failed to save post: ${exception.message}")
+                        }
+                }.addOnFailureListener { exception ->
+                    Log.e("CanvasViewModel", "Failed to fetch username: ${exception.message}")
+                }
 
             }.addOnFailureListener { exception: Exception ->
                 Log.e("CanvasViewModel", "Upload failed: ${exception.message}")
