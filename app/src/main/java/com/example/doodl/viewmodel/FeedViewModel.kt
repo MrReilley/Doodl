@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
 
 
 // A ViewModel is a component used to store and manage UI-related data in a way that survives configuration changes
@@ -105,23 +106,18 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }
     }
     fun fetchNewestPosts() {
-        repository.getNewestPosts().addOnSuccessListener { querySnapshot ->
-            // Log the number of posts retrieved
-            Log.d("FeedViewModel", "Successfully fetched ${querySnapshot.size()} posts")
-
-            val posts = querySnapshot.toObjects(Post::class.java)
-
-            // Log the details of the posts (we can turn this off since it reveals sensitive data)
-            for (post in posts) {
-                Log.d("FeedViewModel", "Post Details: $post")
+        viewModelScope.launch {
+            try {
+                val posts = repository.getNewestPosts().await()
+                val updatedPosts = posts.map { post ->
+                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                }
+                _newestPosts.value = updatedPosts
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
             }
-
-            _newestPosts.value = posts
-        }.addOnFailureListener { exception ->
-            Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
         }
     }
-
 
 }
 

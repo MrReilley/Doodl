@@ -99,7 +99,7 @@ fun ImageFeed(posts: List<Post>) {
                     }
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it
-                        painter = rememberAsyncImagePainter(post.imagePath), // Use Coil to load image from URL
+                        painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
                         contentDescription = null,
                         // Style modifiers to control the layout and appearance of the image
                         modifier = Modifier

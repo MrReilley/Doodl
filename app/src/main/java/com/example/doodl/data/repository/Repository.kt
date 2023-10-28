@@ -7,7 +7,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -84,13 +83,26 @@ class Repository {
     fun savePostToFirestore(post: Post): Task<Void> {
         return db.collection("posts").document(post.postId).set(post)
     }
-    fun getNewestPosts(limit: Int = 10): Task<QuerySnapshot> {
+    fun getNewestPosts(): Task<List<Post>> {
+        // Return the Task from Firebase directly, ordered by timestamp in descending order
         return db.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .limit(limit.toLong())
             .get()
+            .continueWith {
+                it.result?.toObjects(Post::class.java) ?: emptyList()
+            }
     }
 
+    fun getImageUrl(imagePath: String): Task<String> {
+        val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
+        return storageRef.downloadUrl.continueWith { task ->
+            if (task.isSuccessful) {
+                return@continueWith task.result?.toString() ?: ""
+            } else {
+                throw task.exception ?: RuntimeException("Unknown error occurred")
+            }
+        }
+    }
 }
 
 
