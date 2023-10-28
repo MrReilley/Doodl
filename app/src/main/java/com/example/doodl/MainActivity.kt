@@ -30,13 +30,17 @@ import com.google.firebase.auth.FirebaseAuth
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
+      /*  val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
             "feed"
         } else {
             "loginScreen"
-        }
+        }*/
+
         setContent {
-            DoodlTheme {
+            DoodlTheme(
+                darkTheme = false,
+                dynamicColor = false
+            ) {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -53,7 +57,8 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize()) {
                         NavHost(
                             navController = navController,
-                            startDestination = userLoggedIn,
+                            startDestination = "feed",
+                            //userLoggedIn,
                         ) {
                             composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
                             composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }

@@ -123,6 +123,7 @@ fun ProfileScreen(navController: NavController? = null) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.background(Color.LightGray),
+                containerColor = Color.Black,
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
