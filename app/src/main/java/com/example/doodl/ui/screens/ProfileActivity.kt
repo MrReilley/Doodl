@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.logout
@@ -59,11 +61,12 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchUserImages()
+        feedViewModel.fetchUserImageUrls()
         feedViewModel.fetchUserDetails(userId)
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.liveImages.observeAsState(emptyList())
+    val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
+
     val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     val userBioText = feedViewModel.userBio.observeAsState(null).value
@@ -158,13 +161,13 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfilePosts(imageUrls = imageUrls)
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfilePosts(imageUrls = imageUrls)
                     }
                 }
             }
@@ -173,18 +176,18 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
 }
 
 @Composable
-fun ProfilePosts(images: List<Bitmap>) {
+fun ProfilePosts(imageUrls: List<String>) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3)
     ) {
-        itemsIndexed(images) { _, image ->
+        itemsIndexed(imageUrls) { _, imageUrl ->
             Box(
                 modifier = Modifier
                     .aspectRatio(1f) // Set the aspect ratio to make images square
                     .padding(8.dp)
             ) {
                 Image(
-                    painter = remember { BitmapPainter(image.asImageBitmap()) },
+                    painter = rememberAsyncImagePainter(model = imageUrl),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

@@ -24,57 +24,37 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     // LiveData to hold a list of Bitmap images from Firebase.
     private val newImages = MutableLiveData<List<Bitmap>>()
     private val _newestPosts = MutableLiveData<List<Post>>()
+    private val _userImageUrls = MutableLiveData<List<String>>()
 
     val liveImages: LiveData<List<Bitmap>> = newImages
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
+    val userImageUrls: LiveData<List<String>> get() = _userImageUrls
 
     val userName = MutableLiveData<String>()
     val userBio = MutableLiveData<String?>()
     val profilePic = MutableLiveData<Bitmap?>()
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
-    fun fetchImages() {
-        repository.fetchAllImages(onSuccess = { imagePaths ->
-            viewModelScope.launch {
-                val bitmaps = imagePaths.mapNotNull { path ->
-                    // Launch a coroutine in IO dispatcher (optimized for I/O tasks)
-                    withContext(Dispatchers.IO) {
-                        try {
-                            // Attempt to download the image and await its result
-                            repository.downloadImage(path).await()
-                        } catch (exception: Exception) {
-                            // Log any errors during the download
-                            Log.e("FeedViewModel", "Download failed: ${exception.message}")
-                            null// Return null in case of failure
-                        }
-                    }
-                }
-                // Update _images LiveData with the fetched Bitmaps
-                newImages.value = bitmaps
-            }
-        }, onFailure = { exception ->
-            Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
-        })
-    }
-    fun fetchUserImages() {
+    fun fetchUserImageUrls() {
         repository.fetchUserImages(userId, onSuccess = { imagePaths ->
             viewModelScope.launch {
-                val bitmaps = imagePaths.mapNotNull { path ->
+                val urls = imagePaths.mapNotNull { path ->
                     withContext(Dispatchers.IO) {
                         try {
-                            repository.downloadImage(path).await()
+                            repository.getImageUrl(path).await()
                         } catch (exception: Exception) {
-                            Log.e("FeedViewModel", "Download failed: ${exception.message}")
-                            null // Return null in case of failure
+                            Log.e("FeedViewModel", "URL fetch failed: ${exception.message}")
+                            null
                         }
                     }
                 }
-                newImages.value = bitmaps
+                _userImageUrls.value = urls
             }
         }, onFailure = { exception ->
             Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
         })
     }
+
 
     fun fetchUserDetails(userId: String) {
         repository.getUserDetails(userId).addOnSuccessListener { document ->

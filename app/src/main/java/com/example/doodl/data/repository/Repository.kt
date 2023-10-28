@@ -3,6 +3,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -44,22 +45,6 @@ class Repository {
             val bytes = task.result
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             bitmap// Return the constructed Bitmap
-        }
-    }
-
-    fun fetchAllImages(onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
-        // Reference to your 'feed' directory in Firebase storage
-        val feedRef = storageReference.child("feed")
-
-        // Retrieve all file references in 'feed' directory
-        feedRef.listAll().addOnSuccessListener { listResult ->
-            // Map the results to their paths and trigger the onSuccess callback
-            val imagePaths = listResult.items.map { it.path }
-            // Invoke onSuccess callback with the list of image paths
-            onSuccess(imagePaths.reversed())//.reversed will reverse
-        }.addOnFailureListener { exception ->
-            // Trigger onFailure callback on error
-            onFailure(exception)
         }
     }
 
