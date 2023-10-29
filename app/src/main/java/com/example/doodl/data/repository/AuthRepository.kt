@@ -22,7 +22,8 @@ class AuthRepository {
             val firebaseUser = authResult.user
             if (firebaseUser != null) {
                 val uniqueUsername = generateUniqueUsername().await()
-                val user = DoodlUser(firebaseUser.uid, uniqueUsername, null, "DefaultBio")
+                val user = DoodlUser(firebaseUser.uid, uniqueUsername, null,
+                    "Biography: Tell the Doodle world about yourself!")
                 firestore.collection("users").document(firebaseUser.uid).set(user).await()
                 RegistrationState.Success
             } else {
@@ -34,8 +35,6 @@ class AuthRepository {
             RegistrationState.Error(e.message ?: "An error occurred during registration.")
         }
     }
-
-
 
     suspend fun login(email: String, password: String): LoginState {
         return try {
@@ -49,7 +48,7 @@ class AuthRepository {
 
     private fun generateUniqueUsername(): Task<String> {
         val taskSource = TaskCompletionSource<String>()
-        val potentialUsername = "Doodl${Random.nextInt(1000, 9999)}"
+        val potentialUsername = "Doodler${Random.nextInt(1000, 9999)}"
 
         firestore.collection("users").whereEqualTo("username", potentialUsername).get().addOnSuccessListener { snapshot ->
             if (snapshot.isEmpty) {

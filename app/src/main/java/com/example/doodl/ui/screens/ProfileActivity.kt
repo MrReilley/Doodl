@@ -1,6 +1,5 @@
 package com.example.doodl.ui.screens
 
-import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -34,8 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,24 +43,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 @Composable
-fun ProfileScreen(navController: NavController? = null) {
+fun ProfileScreen(userId: String, navController: NavController? = null) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
     val repository = Repository()
-    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchImages()
+        feedViewModel.fetchUserImageUrls()
+        feedViewModel.fetchUserDetails(userId)
+        feedViewModel.fetchLikedPosts()
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.liveImages.observeAsState(emptyList())
+    val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
+
+    val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+    val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
+    val userBioText = feedViewModel.userBio.observeAsState(null).value
+    val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+
+
+
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -79,7 +89,7 @@ fun ProfileScreen(navController: NavController? = null) {
                 Text(text = "")
                 Spacer(modifier = Modifier.width(140.dp))
                 Text(
-                    text = "userName",
+                    text = userName,
                     fontWeight = FontWeight.Bold,
                     fontSize = 30.sp,
                     overflow = TextOverflow.Ellipsis,
@@ -109,8 +119,7 @@ fun ProfileScreen(navController: NavController? = null) {
                         .padding(4.dp)
                 )
                 Text(
-                    text = "This is for the bio/description box for the template section of the profile page :)." +
-                            "I'm going to test the text wrapping now lol ewqdqdqdawdawdwadwadawddsawdawdasadawdasawdadawda",
+                    text = userBioText ?: "No bio available.",
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
                     softWrap = true,
@@ -154,13 +163,13 @@ fun ProfileScreen(navController: NavController? = null) {
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfileUsersPosts(imageUrls = imageUrls)
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfileLikedPosts(posts = likedPosts.value)
                     }
                 }
             }
@@ -169,23 +178,45 @@ fun ProfileScreen(navController: NavController? = null) {
 }
 
 @Composable
-fun ProfilePosts(images: List<Bitmap>) {
+fun ProfileUsersPosts(imageUrls: List<String>) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3)
     ) {
-        itemsIndexed(images) { _, image ->
+        itemsIndexed(imageUrls) { _, imageUrl ->
             Box(
                 modifier = Modifier
                     .aspectRatio(1f) // Set the aspect ratio to make images square
                     .padding(8.dp)
             ) {
                 Image(
-                    painter = remember { BitmapPainter(image.asImageBitmap()) },
+                    painter = rememberAsyncImagePainter(model = imageUrl),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
                         .scale(1.1f) // Apply the scaling factor to individual images
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileLikedPosts(posts: List<Post>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3)
+    ) {
+        items(posts) { post ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .padding(8.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = post.imageUrl),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

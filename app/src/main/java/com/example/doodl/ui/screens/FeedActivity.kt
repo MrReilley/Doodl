@@ -1,6 +1,5 @@
 package com.example.doodl.ui.screens
 
-import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -31,44 +30,48 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
 @Composable
-fun FeedScreen() {
+fun FeedScreen(userId: String) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
     val repository = Repository()
-    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
+    val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
+    val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
+
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchImages()
+        feedViewModel.fetchNewestPosts()
+        feedViewModel.fetchUserLikedAPost()
     }
-    // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.liveImages.observeAsState(emptyList())
-    ImageFeed(images.value)
+    ImageFeed(newestPosts, userLikesAPost, feedViewModel)
 }
 
 @Composable
-fun ImageFeed(images: List<Bitmap>) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: FeedViewModel) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
 
     // Display a vertical list of images.
     LazyColumn {
-        items(images) { image ->
+        items(posts) { post ->
             // For each image, create an Image composable
+            val isLiked = userLikedPosts.contains(post.postId)
+            var applyColorFilter by remember { mutableStateOf(isLiked) }
             // background of feed
             Column(
                 modifier = Modifier
@@ -89,11 +92,11 @@ fun ImageFeed(images: List<Bitmap>) {
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = "userName", fontWeight = FontWeight.Bold)
+                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold)
                     }
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it
-                        painter = BitmapPainter(image.asImageBitmap()), // null implies decorative image (no alt text)
+                        painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
                         contentDescription = null,
                         // Style modifiers to control the layout and appearance of the image
                         modifier = Modifier
@@ -103,7 +106,7 @@ fun ImageFeed(images: List<Bitmap>) {
                         contentScale = ContentScale.Crop
                     )
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        var applyColorFilter by remember { mutableStateOf(false) }
+                        //var applyColorFilter by remember { mutableStateOf(false) }
 
                         Image(
                             painter = painterResource(id = R.drawable.likeicon),
@@ -116,18 +119,26 @@ fun ImageFeed(images: List<Bitmap>) {
                             alignment = Alignment.TopEnd,
                             modifier = Modifier.clickable {
                                 // Toggle the applyColorFilter when the image is clicked
-                                applyColorFilter = !applyColorFilter
-                                if(applyColorFilter){
-                                    val message = "You liked a post"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
-                                    Toast.makeText(context, message, duration).show()
-                                }else{
-                                    val message = "You disliked a post"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
-                                    Toast.makeText(context, message, duration).show()
+                                val currentTimeStamp = System.currentTimeMillis()
+                                if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
+                                    applyColorFilter = !applyColorFilter
+                                    if(applyColorFilter){
+                                        feedViewModel.likePost(post.postId)
+                                        val message = "You liked a post"
+                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                        // Display a toast message using the obtained context
+                                        Toast.makeText(context, message, duration).show()
+                                    }else{
+                                        feedViewModel.unlikePost(post.postId)
+                                        val message = "You disliked a post"
+                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                        // Display a toast message using the obtained context
+                                        Toast.makeText(context, message, duration).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
                                 }
+
                             }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp))

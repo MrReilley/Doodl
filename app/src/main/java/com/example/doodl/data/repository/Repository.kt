@@ -1,7 +1,14 @@
 package com.example.doodl.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.example.doodl.data.Like
+import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -11,13 +18,15 @@ import com.google.firebase.storage.UploadTask
 // Data operations, abstracting origin of data
 class Repository {
 
-    //Firebase Storage
     private val storageReference = FirebaseStorage.getInstance().reference
+    private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
 
     // Function used in CanvasViewModel to upload byte array representing an image to Firebase Storage
     fun uploadByteArray(byteArray: ByteArray): UploadTask {
-        // Generate a unique file reference in Firebase Storage using the current timestamp
-        val fileRef = storageReference.child("feed/${System.currentTimeMillis()}.png")
+        // Generate a unique file reference in Firebase Storage using the userId and current timestamp
+        val userId = auth.currentUser?.uid ?: throw IllegalStateException("User must be logged in to upload")
+        val fileRef = storageReference.child("user/$userId/posts/${System.currentTimeMillis()}.png")
         // Upload byte array to Firebase Storage reference
         return fileRef.putBytes(byteArray)
     }
@@ -39,22 +48,91 @@ class Repository {
             bitmap// Return the constructed Bitmap
         }
     }
+    fun fetchUsername(userId: String): Task<String?> {
+        return db.collection("users").document(userId).get().continueWith { task ->
+            if (task.isSuccessful) {
+                return@continueWith task.result?.getString("username")
+            } else {
+                throw task.exception ?: RuntimeException("Unknown error occurred")
+            }
+        }
+    }
 
-    fun fetchAllImages(onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
-        // Reference to your 'feed' directory in Firebase storage
-        val feedRef = storageReference.child("feed")
+    fun fetchUserImages(userId: String, onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
+        // Reference to the logged-in user's images directory in Firebase storage
+        val userImagesRef = storageReference.child("user/$userId/posts")
 
-        // Retrieve all file references in 'feed' directory
-        feedRef.listAll().addOnSuccessListener { listResult ->
+        // Retrieve all file references in the user's posts directory
+        userImagesRef.listAll().addOnSuccessListener { listResult ->
             // Map the results to their paths and trigger the onSuccess callback
             val imagePaths = listResult.items.map { it.path }
-            // Invoke onSuccess callback with the list of image paths
-            onSuccess(imagePaths.reversed())//.reversed will reverse
+            onSuccess(imagePaths.reversed()) // .reversed will reverse the list so newest images come first
         }.addOnFailureListener { exception ->
-            // Trigger onFailure callback on error
             onFailure(exception)
         }
     }
+
+    fun getUserDetails(userId: String): Task<DocumentSnapshot> {
+        return db.collection("users").document(userId).get()
+    }
+
+    fun updateUserDetails(userId: String, username: String, userBio: String): Task<Void> {
+        val userDocument = db.collection("users").document(userId)
+        // Using a map to specify only the fields you want to update
+        val updates = hashMapOf(
+            "username" to username,
+            "userBio" to userBio
+        )
+        return userDocument.update(updates as Map<String, Any>)
+    }
+
+    fun savePostToFirestore(post: Post): Task<Void> {
+        return db.collection("posts").document(post.postId).set(post)
+    }
+    fun getNewestPosts(): Task<List<Post>> {
+        // Return the Task from Firebase directly, ordered by timestamp in descending order
+        return db.collection("posts")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .continueWith {
+                it.result?.toObjects(Post::class.java) ?: emptyList()
+            }
+    }
+
+    fun getImageUrl(imagePath: String): Task<String> {
+        val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
+        return storageRef.downloadUrl.continueWith { task ->
+            if (task.isSuccessful) {
+                return@continueWith task.result?.toString() ?: ""
+            } else {
+                throw task.exception ?: RuntimeException("Unknown error occurred")
+            }
+        }
+    }
+    fun addLike(like: Like): Task<Void> {
+        return db.collection("Likes").document(like.likeId).set(like)
+    }
+    fun removeLike(likeId: String): Task<Void> {
+        return db.collection("Likes").document(likeId).delete()
+    }
+    fun isPostLikedByUser(postId: String, userId: String): Task<QuerySnapshot> {
+        return db.collection("Likes")
+            .whereEqualTo("postId", postId)
+            .whereEqualTo("userId", userId)
+            .get()
+    }
+    fun getLikedPostsForUser(userId: String): Task<QuerySnapshot> {
+        return db.collection("Likes").whereEqualTo("userId", userId).get()
+    }
+    fun getLikesCountForPost(postId: String): Task<QuerySnapshot> {
+        return db.collection("Likes").whereEqualTo("postId", postId).get()
+    }
+    fun getPostData(postId: String): Task<DocumentSnapshot> {
+        return db.collection("posts").document(postId).get()
+    }
+
+
+
 
 }
 

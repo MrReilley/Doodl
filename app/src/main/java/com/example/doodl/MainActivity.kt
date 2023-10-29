@@ -1,6 +1,7 @@
 package com.example.doodl
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -9,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,11 +35,13 @@ import com.google.firebase.auth.FirebaseAuth
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-      /*  val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
+        val userLoggedIn = if (FirebaseAuth.getInstance().currentUser != null) {
+            Log.d("MainActivity", "User is logged in, navigating to feed.")
             "feed"
         } else {
+            Log.d("MainActivity", "User is not logged in, navigating to loginScreen.")
             "loginScreen"
-        }*/
+        }
 
         setContent {
             DoodlTheme(
@@ -61,18 +63,37 @@ class MainActivity : ComponentActivity() {
                     // Retrieve the current route
                     val currentRoute = backStackEntry?.destination?.route
 
+                    Log.d("MainActivity", "Current route: $currentRoute")
+
                     Box(Modifier.fillMaxSize()) {
                         NavHost(
                             navController = navController,
-                            startDestination = "feed",
-                            //userLoggedIn,
+                            startDestination = userLoggedIn,
                         ) {
-                            composable("loginScreen") { LoginScreen(navController, this@MainActivity) }
-                            composable("registrationScreen") { RegistrationScreen(navController, this@MainActivity) }
-                            composable("canvas") { CanvasScreen(navController, navBarHeight, canvasViewModel) }
+                            composable("loginScreen") {
+                                Log.d("MainActivity", "Navigating to loginScreen")
+                                LoginScreen(navController, this@MainActivity) }
+                            composable("registrationScreen") {
+                                Log.d("MainActivity", "Navigating to registrationScreen")
+                                RegistrationScreen(navController, this@MainActivity) }
+                            composable("canvas") {
+                                Log.d("MainActivity", "Navigating to canvas")
+                                CanvasScreen(navController, navBarHeight, canvasViewModel) }
                             composable("postInfo") { PostInfoScreen(navController, canvasViewModel) }
-                            composable("feed") { FeedScreen() }
-                            composable("profile") { ProfileScreen(navController) }
+                            composable("feed") {
+                                Log.d("MainActivity", "Navigating to feed")
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                    ?: throw IllegalStateException("User must be logged in to access the feed.")
+                                FeedScreen(userId)
+                            }
+                            composable("profile") {
+                                val currentUser = FirebaseAuth.getInstance().currentUser
+                                if (currentUser == null) {
+                                    navController.navigate("loginScreen")
+                                } else {
+                                    ProfileScreen(currentUser.uid, navController)
+                                }
+                            }
                         }
 
                         // Bottom Navigation Bar
