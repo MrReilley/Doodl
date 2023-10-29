@@ -46,10 +46,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import com.example.doodl.R
 import com.example.doodl.ui.colorButton
 import com.example.doodl.ui.drawCanvas
 import com.example.doodl.ui.eraserButton
@@ -141,7 +143,7 @@ fun CanvasActivity(
                         redoPaths.add(lastPath)
                     }
                 }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Undo")
+                    Icon(painter = painterResource(id = R.drawable.undo), contentDescription = "Undo")
                 }
                 IconButton(onClick = {
                     if (!isColorPickerVisible.value && redoPaths.isNotEmpty()) {
@@ -149,7 +151,7 @@ fun CanvasActivity(
                         paths.add(lastRedoPath)
                     }
                 }) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Redo")
+                    Icon(painter = painterResource(id = R.drawable.redo), contentDescription = "Redo")
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
