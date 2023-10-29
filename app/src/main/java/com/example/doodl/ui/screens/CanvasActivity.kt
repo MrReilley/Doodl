@@ -363,55 +363,61 @@ fun PostInfoScreen(
             // Image Preview
             if (bitmap != null) {
                 val aspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
-                val previewWidth = 250.dp
+                val previewWidth = 200.dp
                 val previewHeight = previewWidth / aspectRatio
                 Box(
                     modifier = Modifier
+                        .border(2.dp, Color.LightGray)
                         .width(previewWidth)
                         .height(previewHeight)
-                        .border(2.dp, Color.LightGray)
                 ) {
                     Image(bitmap = bitmap.asImageBitmap(), contentDescription = "Preview")
                 }
             }
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.Center,
+
+            Column(
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
-                maxItemsInEachRow = 3
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                tagOptions.forEach { tag ->
-                    TagButton(tag, selectedTags)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.Center,
+                    maxItemsInEachRow = 3
+                ) {
+                    tagOptions.forEach { tag ->
+                        TagButton(tag, selectedTags)
+                    }
                 }
-            }
-            Button(
-                onClick = {
-                    if (bitmap != null) {
-                        isUploading = true
-                        canvasViewModel.uploadDrawing(bitmap) { success ->
-                            isUploading = false
-                            if (success) {
-                                canvasViewModel.clearCurrentBitmap()
-                                navController.navigate("feed")
-                                val message = "Post successful"
-                                val duration = Toast.LENGTH_SHORT
-                                Toast.makeText(context, message, duration).show()
-                            } else {
-                                val message = "Post failed"
-                                val duration = Toast.LENGTH_SHORT
-                                Toast.makeText(context, message, duration).show()
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        if (bitmap != null) {
+                            isUploading = true
+                            canvasViewModel.uploadDrawing(bitmap) { success ->
+                                isUploading = false
+                                if (success) {
+                                    canvasViewModel.clearCurrentBitmap()
+                                    navController.navigate("feed")
+                                    val message = "Post successful"
+                                    val duration = Toast.LENGTH_SHORT
+                                    Toast.makeText(context, message, duration).show()
+                                } else {
+                                    val message = "Post failed"
+                                    val duration = Toast.LENGTH_SHORT
+                                    Toast.makeText(context, message, duration).show()
+                                }
                             }
                         }
+                    },
+                    enabled = !isUploading
+                ) {
+                    if (isUploading) {
+                        CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
+                    } else {
+                        Text("Share", color = Color.Black)
                     }
-                },
-                enabled = !isUploading
-            ) {
-                if(isUploading) {
-                    CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
-                } else {
-                    Text("Share", color = Color.Black)
                 }
             }
         }
