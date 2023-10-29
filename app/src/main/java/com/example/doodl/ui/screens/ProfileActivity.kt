@@ -9,11 +9,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -23,6 +30,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,13 +49,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.doodl.R
+import com.example.doodl.data.User
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.EditPopup
+import com.example.doodl.ui.EditableTextField
+import com.example.doodl.ui.ProfilePictureItem
 import com.example.doodl.ui.ProfilePosts
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
+
+private var lastUserProfile = mutableStateOf(User(R.drawable.likeicon, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(navController: NavController? = null) {
@@ -60,9 +72,10 @@ fun ProfileScreen(navController: NavController? = null) {
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchImages()
     }
-    var profUsername by remember { mutableStateOf("userName") }
-    var profDescription by remember { mutableStateOf("This is for the bio/description box for the template section of the profile page :)." +
-            "I'm going to test the text wrapping now lol") }
+    var profileImage by remember { mutableIntStateOf(lastUserProfile.value.profileImageResource) }
+    var profUsername by remember { mutableStateOf(lastUserProfile.value.username) }
+    var profDescription by remember { mutableStateOf(lastUserProfile.value.description) }
+
     // Observe images LiveData and pass it to the ImageFeed composable.
     val images = feedViewModel.liveImages.observeAsState(emptyList())
     Column(
@@ -110,16 +123,19 @@ fun ProfileScreen(navController: NavController? = null) {
                 EditPopup(
                     profUsername,
                     profDescription,
-                    onTextUpdated = { newUsername, newDescription ->
+                    profileImage,
+                    selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
+                    onTextUpdated = { newUsername, newDescription, newProfilePicture ->
                         profUsername = newUsername
                         profDescription = newDescription
+                        profileImage = newProfilePicture
                     }
                     )
                 Spacer(modifier = Modifier.weight(0.15f))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = null,
-                    tint = Color.Blue,
+                    tint = MaterialTheme.colorScheme.tertiaryContainer,
                     modifier = Modifier
                         .clickable {
                             if (navController != null) {
@@ -144,7 +160,7 @@ fun ProfileScreen(navController: NavController? = null) {
             Spacer(modifier = Modifier.width(25.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RoundImageCard(
-                    image = R.drawable.likeicon,
+                    image = profileImage,
                     Modifier
                         .size(125.dp)
                         .padding(4.dp)
@@ -161,17 +177,19 @@ fun ProfileScreen(navController: NavController? = null) {
             var selectedTabIndex by remember { mutableIntStateOf(0) }
             TabRow(
                 selectedTabIndex = selectedTabIndex,
-                modifier = Modifier.background(Color.Black),
+                modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = Color.Blue
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             ) {
                 Tab(
                     selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 }
+                    onClick = { selectedTabIndex = 0 },
+                    modifier = Modifier
+                        .height(45.dp)
                 ){
                     Image(
                         painter =  painterResource(id = R.drawable.ic_grid),
@@ -180,7 +198,9 @@ fun ProfileScreen(navController: NavController? = null) {
                 }
                 Tab(
                     selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 }
+                    onClick = { selectedTabIndex = 1 },
+                    modifier = Modifier
+                        .height(45.dp)
                 ){
                     Image(
                         painter =  painterResource(id = R.drawable.likeicon),
@@ -203,5 +223,93 @@ fun ProfileScreen(navController: NavController? = null) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EditPopup(oldUsername:String, oldDescription:String, oldImageResource: Int, selectedProfilePicture: MutableState<Int>, onTextUpdated: (newUsername: String, newDescription: String, newImageResource: Int) -> Unit) {
+    var isEditable by remember { mutableStateOf(false) }
+    var username by remember { mutableStateOf(oldUsername) }
+    var description by remember { mutableStateOf(oldDescription) }
+    var profilePicture by remember { mutableIntStateOf(oldImageResource) }
+    val profilePictures = listOf(
+        R.drawable.downloadicon,
+        R.drawable.eraser,
+        R.drawable.ic_grid,
+        R.drawable.likeicon
+    )
+    Column {
+        /*ClickableText(
+            text = AnnotatedString("edit"),
+            onClick = {
+                isEditable = true
+            },
+            style = TextStyle(
+                color = Color.Blue,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            modifier = Modifier.padding(16.dp)
+        )*/
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiaryContainer,
+            modifier = Modifier
+                .clickable {
+                    isEditable = true
+                }
+        )
+    }
+    if (isEditable) {
+        AlertDialog(
+            onDismissRequest = {
+                isEditable = false
+            },
+            title = {
+                Text("Edit your profile")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isEditable = false
+                        onTextUpdated(username, description, profilePicture)
+                        val updatedUserProfile = User(profilePicture, username, description)
+                        lastUserProfile.value = updatedUserProfile
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary
+                    )
+                ) {
+                    Text("Save")
+                }
+            },
+            text = {
+                Column {
+                    Text(text = "Set your profile picture")
+                    // List of selectable profile pictures
+                    LazyRow {
+                        items(profilePictures) { imageResource ->
+                            ProfilePictureItem(
+                                imageResource = imageResource,
+                                isSelected = imageResource == selectedProfilePicture.value,
+                                onProfilePictureSelected = {
+                                    selectedProfilePicture.value = imageResource
+                                    profilePicture = imageResource
+                                }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField("Username", username) { newText ->
+                        username = newText
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField("Description", description) { newText ->
+                        description = newText
+                    }
+                }
+            }
+        )
     }
 }

@@ -10,10 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,12 +24,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,9 +36,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,7 +63,6 @@ import androidx.navigation.NavController
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
-
 // Composable functions for reusable UI components
 
 @Composable
@@ -152,7 +146,9 @@ fun ColorButton(
                     // Color picker is visible and this button is not selected
                     (isColorPickerVisible.value && selectedButtonId != buttonId) -> {
                         Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                    } else -> {
+                    }
+
+                    else -> {
                         Modifier
                     }
                 }
@@ -200,7 +196,9 @@ fun EraserButton(
                     // Color picker is visible
                     isColorPickerVisible.value -> {
                         Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                    } else -> {
+                    }
+
+                    else -> {
                         Modifier
                     }
                 }
@@ -290,18 +288,23 @@ fun logout(navController: NavController) {
 
 @Composable
 fun RoundImageCard(
-    image: Int, modifier: Modifier = Modifier
-        .padding(8.dp)
-        .size(64.dp)
+    image: Int,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
-    Card(shape = CircleShape, modifier = modifier) {
+    Card(
+        shape = CircleShape,
+        modifier = modifier
+    ) {
         Image(
             painter = painterResource(id = image),
             contentDescription = null,
-            contentScale = ContentScale.Crop
+            contentScale = contentScale, // Set the content scale here
+            modifier = Modifier.fillMaxSize() // Make the image fill the available space
         )
     }
 }
+
 
 @Composable
 fun ProfilePosts(images: List<Bitmap>) {
@@ -354,64 +357,33 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
     }
 }
 
-@Composable
-fun EditPopup(oldUsername:String, oldDescription:String, onTextUpdated: (newUsername: String, newDescription: String) -> Unit) {
-    var isEditable by remember { mutableStateOf(false) }
-    var username by remember { mutableStateOf(oldUsername) }
-    var description by remember { mutableStateOf(oldDescription) }
 
-    Column {
-        /*ClickableText(
-            text = AnnotatedString("edit"),
-            onClick = {
-                isEditable = true
-            },
-            style = TextStyle(
-                color = Color.Blue,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(16.dp)
-        )*/
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = null,
-            tint = Color.Blue,
-            modifier = Modifier
-                .clickable {
-                    isEditable = true
-                }
-        )
-    }
-    if (isEditable) {
-        AlertDialog(
-            onDismissRequest = {
-                isEditable = false
-            },
-            title = {
-                Text("Edit your profile")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        isEditable = false
-                        onTextUpdated(username, description)
-                    }
-                ) {
-                    Text("Save")
-                }
-            },
-            text = {
-                Column {
-                    EditableTextField("Username", username) { newText ->
-                        username = newText
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    EditableTextField("Description", description) { newText ->
-                        description = newText
-                    }
-                }
+
+@Composable
+fun ProfilePictureItem(
+    imageResource: Int,
+    isSelected: Boolean,
+    onProfilePictureSelected: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable {
+                onProfilePictureSelected()
             }
+    ) {
+        Image(
+            painter = painterResource(id = imageResource),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                )
+                .align(Alignment.Center)
         )
     }
 }
+
