@@ -51,14 +51,14 @@ fun FeedScreen(userId: String) {
     val repository = Repository()
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
-    val userLikedPosts by feedViewModel.userLikedPosts.observeAsState(emptyList())
+    val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
 
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchNewestPosts()
-        feedViewModel.fetchUserLikedPosts()
+        feedViewModel.fetchUserLikedAPost()
     }
-    ImageFeed(newestPosts, userLikedPosts, feedViewModel)
+    ImageFeed(newestPosts, userLikesAPost, feedViewModel)
 }
 
 @Composable

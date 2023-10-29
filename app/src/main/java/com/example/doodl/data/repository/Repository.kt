@@ -127,6 +127,10 @@ class Repository {
     fun getLikesCountForPost(postId: String): Task<QuerySnapshot> {
         return db.collection("Likes").whereEqualTo("postId", postId).get()
     }
+    fun getPostData(postId: String): Task<DocumentSnapshot> {
+        return db.collection("posts").document(postId).get()
+    }
+
 
 
 

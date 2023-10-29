@@ -26,21 +26,24 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _newestPosts = MutableLiveData<List<Post>>()
     private val _userImageUrls = MutableLiveData<List<String>>()
     private val _likesCountForPosts = MutableLiveData<Map<String, Int>>()
-    private val _userLikedPosts = MutableLiveData<List<String>>()
+    private val _userLikedAPost = MutableLiveData<List<String>>()
+    private val _likedPosts = MutableLiveData<List<Post>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
-    var lastLikeTimestamp = 0L // Timestamp of the last like action
-    val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
     val likesCountForPosts: LiveData<Map<String, Int>> get() = _likesCountForPosts
-    val userLikedPosts: LiveData<List<String>> get() = _userLikedPosts
+    val userLikedAPost: LiveData<List<String>> get() = _userLikedAPost
+    val likedPosts: LiveData<List<Post>> get() = _likedPosts
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
 
 
     val userName = MutableLiveData<String>()
     val userBio = MutableLiveData<String?>()
     val profilePic = MutableLiveData<Bitmap?>()
+
+    var lastLikeTimestamp = 0L // Timestamp of the last like action
+    val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchUserImageUrls() {
@@ -118,6 +121,29 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }
+    fun fetchLikedPosts() {
+        viewModelScope.launch {
+            try {
+                // Step 1: Fetch liked post IDs
+                val likedPostIds = repository.getLikedPostsForUser(userId).await().documents.mapNotNull { it.getString("postId") }
+
+                // Step 2: Fetch post data for each liked post ID
+                val likedPostsData = likedPostIds.map { postId ->
+                    repository.getPostData(postId).await().toObject(Post::class.java)
+                }.filterNotNull()
+
+                // Step 3: Fetch URLs for the images of these posts
+                val likedPostsWithUrls = likedPostsData.map { post ->
+                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                }
+
+                // Step 4: Update LiveData with the fetched posts
+                _likedPosts.value = likedPostsWithUrls
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching liked posts: ${exception.message}")
+            }
+        }
+    }
 
     fun likePost(postId: String) {
         val currentTimestamp = System.currentTimeMillis()
@@ -142,10 +168,10 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }.addOnFailureListener { exception ->
             Log.e("FeedViewModel", "Error checking if post is liked: ${exception.message}")
         }
-        val currentLikes = _userLikedPosts.value.orEmpty().toMutableList()
+        val currentLikes = _userLikedAPost.value.orEmpty().toMutableList()
         if (!currentLikes.contains(postId)) {
             currentLikes.add(postId)
-            _userLikedPosts.value = currentLikes
+            _userLikedAPost.value = currentLikes
         }
     }
 
@@ -171,9 +197,9 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }.addOnFailureListener { exception ->
             Log.e("FeedViewModel", "Error finding like for the post: ${exception.message}")
         }
-        val currentLikes = _userLikedPosts.value.orEmpty().toMutableList()
+        val currentLikes = _userLikedAPost.value.orEmpty().toMutableList()
         currentLikes.remove(postId)
-        _userLikedPosts.value = currentLikes
+        _userLikedAPost.value = currentLikes
     }
     fun fetchLikesCountForPost(postId: String) {
         repository.getLikesCountForPost(postId).addOnSuccessListener { querySnapshot ->
@@ -183,12 +209,12 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Error fetching likes count for post: ${exception.message}")
         }
     }
-    fun fetchUserLikedPosts() {
+    fun fetchUserLikedAPost() {
         repository.getLikedPostsForUser(userId).addOnSuccessListener { querySnapshot ->
             val likedPostIds = querySnapshot.documents.mapNotNull { document ->
                 document.getString("postId")
             }
-            _userLikedPosts.value = likedPostIds
+            _userLikedAPost.value = likedPostIds
         }.addOnFailureListener { exception ->
             Log.e("FeedViewModel", "Error fetching user's liked posts: ${exception.message}")
         }

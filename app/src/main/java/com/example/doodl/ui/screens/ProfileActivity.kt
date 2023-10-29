@@ -1,6 +1,5 @@
 package com.example.doodl.ui.screens
 
-import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -34,8 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,8 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.doodl.R
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
@@ -63,6 +61,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchUserImageUrls()
         feedViewModel.fetchUserDetails(userId)
+        feedViewModel.fetchLikedPosts()
     }
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
@@ -70,6 +69,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     val userBioText = feedViewModel.userBio.observeAsState(null).value
+    val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+
 
 
     Column(
@@ -161,13 +162,13 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(imageUrls = imageUrls)
+                        ProfileUsersPosts(imageUrls = imageUrls)
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(imageUrls = imageUrls)
+                        ProfileLikedPosts(posts = likedPosts.value)
                     }
                 }
             }
@@ -176,7 +177,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
 }
 
 @Composable
-fun ProfilePosts(imageUrls: List<String>) {
+fun ProfileUsersPosts(imageUrls: List<String>) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3)
     ) {
@@ -193,6 +194,28 @@ fun ProfilePosts(imageUrls: List<String>) {
                     modifier = Modifier
                         .fillMaxSize()
                         .scale(1.1f) // Apply the scaling factor to individual images
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileLikedPosts(posts: List<Post>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3)
+    ) {
+        items(posts) { post ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .padding(8.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = post.imageUrl),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
