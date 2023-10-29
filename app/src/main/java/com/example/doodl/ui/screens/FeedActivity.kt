@@ -51,17 +51,18 @@ fun FeedScreen(userId: String) {
     val repository = Repository()
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
+    val userLikedPosts by feedViewModel.userLikedPosts.observeAsState(emptyList())
 
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        //feedViewModel.fetchImages()
         feedViewModel.fetchNewestPosts()
+        feedViewModel.fetchUserLikedPosts()
     }
-    ImageFeed(newestPosts)
+    ImageFeed(newestPosts, userLikedPosts, feedViewModel)
 }
 
 @Composable
-fun ImageFeed(posts: List<Post>) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: FeedViewModel) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
 
@@ -69,6 +70,8 @@ fun ImageFeed(posts: List<Post>) {
     LazyColumn {
         items(posts) { post ->
             // For each image, create an Image composable
+            val isLiked = userLikedPosts.contains(post.postId)
+            var applyColorFilter by remember { mutableStateOf(isLiked) }
             // background of feed
             Column(
                 modifier = Modifier
@@ -103,7 +106,7 @@ fun ImageFeed(posts: List<Post>) {
                         contentScale = ContentScale.Crop
                     )
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        var applyColorFilter by remember { mutableStateOf(false) }
+                        //var applyColorFilter by remember { mutableStateOf(false) }
 
                         Image(
                             painter = painterResource(id = R.drawable.likeicon),
@@ -118,11 +121,13 @@ fun ImageFeed(posts: List<Post>) {
                                 // Toggle the applyColorFilter when the image is clicked
                                 applyColorFilter = !applyColorFilter
                                 if(applyColorFilter){
+                                    feedViewModel.likePost(post.postId)
                                     val message = "You liked a post"
                                     val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
                                     // Display a toast message using the obtained context
                                     Toast.makeText(context, message, duration).show()
                                 }else{
+                                    feedViewModel.unlikePost(post.postId)
                                     val message = "You disliked a post"
                                     val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
                                     // Display a toast message using the obtained context

@@ -1,12 +1,14 @@
 package com.example.doodl.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 
@@ -73,6 +75,17 @@ class Repository {
     fun getUserDetails(userId: String): Task<DocumentSnapshot> {
         return db.collection("users").document(userId).get()
     }
+
+    fun updateUserDetails(userId: String, username: String, userBio: String): Task<Void> {
+        val userDocument = db.collection("users").document(userId)
+        // Using a map to specify only the fields you want to update
+        val updates = hashMapOf(
+            "username" to username,
+            "userBio" to userBio
+        )
+        return userDocument.update(updates as Map<String, Any>)
+    }
+
     fun savePostToFirestore(post: Post): Task<Void> {
         return db.collection("posts").document(post.postId).set(post)
     }
@@ -96,6 +109,27 @@ class Repository {
             }
         }
     }
+    fun addLike(like: Like): Task<Void> {
+        return db.collection("Likes").document(like.likeId).set(like)
+    }
+    fun removeLike(likeId: String): Task<Void> {
+        return db.collection("Likes").document(likeId).delete()
+    }
+    fun isPostLikedByUser(postId: String, userId: String): Task<QuerySnapshot> {
+        return db.collection("Likes")
+            .whereEqualTo("postId", postId)
+            .whereEqualTo("userId", userId)
+            .get()
+    }
+    fun getLikedPostsForUser(userId: String): Task<QuerySnapshot> {
+        return db.collection("Likes").whereEqualTo("userId", userId).get()
+    }
+    fun getLikesCountForPost(postId: String): Task<QuerySnapshot> {
+        return db.collection("Likes").whereEqualTo("postId", postId).get()
+    }
+
+
+
 }
 
 

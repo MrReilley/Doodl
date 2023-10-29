@@ -7,12 +7,14 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 
 // A ViewModel is a component used to store and manage UI-related data in a way that survives configuration changes
@@ -23,9 +25,16 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     // LiveData to hold a list of Bitmap images from Firebase.
     private val _newestPosts = MutableLiveData<List<Post>>()
     private val _userImageUrls = MutableLiveData<List<String>>()
+    private val _likesCountForPosts = MutableLiveData<Map<String, Int>>()
+    private val _userLikedPosts = MutableLiveData<List<String>>()
+    private val _postLikesCount = MutableLiveData<Map<String, Int>>()
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
+    val likesCountForPosts: LiveData<Map<String, Int>> get() = _likesCountForPosts
+    val userLikedPosts: LiveData<List<String>> get() = _userLikedPosts
+    val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
+
 
     val userName = MutableLiveData<String>()
     val userBio = MutableLiveData<String?>()
@@ -81,6 +90,18 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             // Handle any errors here.
         }
     }
+    fun updateUserProfile(username: String, userBio: String) {
+        repository.updateUserDetails(userId, username, userBio).addOnSuccessListener {
+            // Successfully updated user details
+            this.userName.value = username
+            this.userBio.value = userBio
+            // You can also show some feedback to the user here
+        }.addOnFailureListener { exception ->
+            // Handle the error
+            Log.e("FeedViewModel", "Error updating user profile: ${exception.message}")
+        }
+    }
+
     fun fetchNewestPosts() {
         viewModelScope.launch {
             try {
@@ -93,6 +114,67 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
             }
+        }
+    }
+
+    fun likePost(postId: String) {
+        // First check if the post is already liked by the user
+        repository.isPostLikedByUser(postId, userId).addOnSuccessListener { querySnapshot ->
+            if (querySnapshot.isEmpty) { // if not liked yet
+                val likeId = UUID.randomUUID().toString()
+                val like = Like(likeId, userId, postId, System.currentTimeMillis())
+                repository.addLike(like).addOnSuccessListener {
+                    Log.d("FeedViewModel", "Successfully liked post")
+                    // Optionally, update likes count or list of liked posts
+                }.addOnFailureListener { exception ->
+                    Log.e("FeedViewModel", "Error liking post: ${exception.message}")
+                }
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("FeedViewModel", "Error checking if post is liked: ${exception.message}")
+        }
+        val currentLikes = _userLikedPosts.value.orEmpty().toMutableList()
+        if (!currentLikes.contains(postId)) {
+            currentLikes.add(postId)
+            _userLikedPosts.value = currentLikes
+        }
+    }
+
+    fun unlikePost(postId: String) {
+        // Find the like document for this user and post
+        repository.isPostLikedByUser(postId, userId).addOnSuccessListener { querySnapshot ->
+            val likeDocument = querySnapshot.documents.firstOrNull()
+            likeDocument?.let {
+                repository.removeLike(it.id).addOnSuccessListener {
+                    Log.d("FeedViewModel", "Successfully unliked post")
+                    // Optionally, update likes count or list of liked posts
+                }.addOnFailureListener { exception ->
+                    Log.e("FeedViewModel", "Error unliking post: ${exception.message}")
+                }
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("FeedViewModel", "Error finding like for the post: ${exception.message}")
+        }
+        val currentLikes = _userLikedPosts.value.orEmpty().toMutableList()
+        currentLikes.remove(postId)
+        _userLikedPosts.value = currentLikes
+    }
+    fun fetchLikesCountForPost(postId: String) {
+        repository.getLikesCountForPost(postId).addOnSuccessListener { querySnapshot ->
+            val likesCount = querySnapshot.size()
+            _postLikesCount.value = mapOf(postId to likesCount)
+        }.addOnFailureListener { exception ->
+            Log.e("FeedViewModel", "Error fetching likes count for post: ${exception.message}")
+        }
+    }
+    fun fetchUserLikedPosts() {
+        repository.getLikedPostsForUser(userId).addOnSuccessListener { querySnapshot ->
+            val likedPostIds = querySnapshot.documents.mapNotNull { document ->
+                document.getString("postId")
+            }
+            _userLikedPosts.value = likedPostIds
+        }.addOnFailureListener { exception ->
+            Log.e("FeedViewModel", "Error fetching user's liked posts: ${exception.message}")
         }
     }
 
