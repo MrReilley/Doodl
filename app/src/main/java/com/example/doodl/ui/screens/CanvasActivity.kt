@@ -395,7 +395,7 @@ fun PostInfoScreen(
                     onClick = {
                         if (bitmap != null) {
                             isUploading = true
-                            canvasViewModel.uploadDrawing(bitmap) { success ->
+                            canvasViewModel.uploadDrawing(bitmap, selectedTags) { success ->
                                 isUploading = false
                                 if (success) {
                                     canvasViewModel.clearCurrentBitmap()

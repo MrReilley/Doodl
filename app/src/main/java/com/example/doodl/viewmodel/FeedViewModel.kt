@@ -29,6 +29,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _userLikedAPost = MutableLiveData<List<String>>()
     private val _likedPosts = MutableLiveData<List<Post>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
+    private val _postTags = MutableLiveData<Map<String, List<String>>>()
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
@@ -36,6 +37,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val userLikedAPost: LiveData<List<String>> get() = _userLikedAPost
     val likedPosts: LiveData<List<Post>> get() = _likedPosts
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
+    val postTags: LiveData<Map<String, List<String>>> get() = _postTags
 
 
     val userName = MutableLiveData<String>()
@@ -113,6 +115,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 val posts = repository.getNewestPosts().await()
                 val updatedPosts = posts.map { post ->
                     val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
+                    fetchTagsForPost(post.postId)
                     post.copy(imageUrl = repository.getImageUrl(post.imagePath).await(), username = username)
                 }
                 _newestPosts.value = updatedPosts
@@ -217,6 +220,19 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             _userLikedAPost.value = likedPostIds
         }.addOnFailureListener { exception ->
             Log.e("FeedViewModel", "Error fetching user's liked posts: ${exception.message}")
+        }
+    }
+
+    fun fetchTagsForPost(postId: String) {
+        viewModelScope.launch {
+            try {
+                val tags = repository.getTagsForPost(postId).await()
+                val currentTags = _postTags.value?.toMutableMap() ?: mutableMapOf()
+                currentTags[postId] = tags
+                _postTags.value = currentTags.toMap()
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching tags for post: ${exception.message}")
+            }
         }
     }
 

@@ -5,7 +5,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -52,17 +58,18 @@ fun FeedScreen(userId: String) {
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
     val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
-
+    val postTags by feedViewModel.postTags.observeAsState(emptyMap())
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
         feedViewModel.fetchNewestPosts()
         feedViewModel.fetchUserLikedAPost()
     }
-    ImageFeed(newestPosts, userLikesAPost, feedViewModel)
+    ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: FeedViewModel) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
 
@@ -145,7 +152,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: Fe
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Image(
+                        /*Image(
                             painter = painterResource(id = R.drawable.downloadicon),
                             contentDescription = "Download",
                             modifier = Modifier.clickable {
@@ -154,7 +161,27 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: Fe
                                 // Display a toast message using the obtained context
                                 Toast.makeText(context, message, duration).show()
                             }.size(26.dp)
-                        )
+                        )*/
+                    }
+                    val tagsForThisPost = postTags[post.postId] ?: emptyList()
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        tagsForThisPost.forEach { tag ->
+                            Text(
+                                text = "#$tag",
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color.Gray.copy(alpha = 0.2f))
+                                    .padding(start = 4.dp, end = 4.dp),
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
