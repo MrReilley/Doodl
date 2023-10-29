@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         } else {
             Log.d("MainActivity", "User is not logged in, navigating to loginScreen.")
             "loginScreen"
-        }*/
+        }
 
         setContent {
             DoodlTheme(
