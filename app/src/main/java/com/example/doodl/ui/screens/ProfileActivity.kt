@@ -23,6 +23,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -40,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,8 +53,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.User
+import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.ProfilePictureItem
@@ -62,22 +69,32 @@ import com.example.doodl.viewmodel.FeedViewModelFactory
 private var lastUserProfile = mutableStateOf(User(R.drawable.likeicon, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
-fun ProfileScreen(navController: NavController? = null) {
+fun ProfileScreen(userId: String, navController: NavController? = null) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
     val repository = Repository()
-    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchImages()
+        feedViewModel.fetchUserImageUrls()
+        feedViewModel.fetchUserDetails(userId)
+        feedViewModel.fetchLikedPosts()
     }
     var profileImage by remember { mutableIntStateOf(lastUserProfile.value.profileImageResource) }
     var profUsername by remember { mutableStateOf(lastUserProfile.value.username) }
     var profDescription by remember { mutableStateOf(lastUserProfile.value.description) }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val images = feedViewModel.liveImages.observeAsState(emptyList())
+    val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
+
+    val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+    val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
+    val userBioText = feedViewModel.userBio.observeAsState(null).value
+    val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+
+
+
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -102,6 +119,7 @@ fun ProfileScreen(navController: NavController? = null) {
                 }
                 val maxUsernameLength = 20
                 Text(
+                    text = userName,
                     text = if(profUsername.length > maxUsernameLength) {
                         profUsername.take(maxUsernameLength)
                     }else{
@@ -166,6 +184,7 @@ fun ProfileScreen(navController: NavController? = null) {
                         .padding(4.dp)
                 )
                 Text(
+                    text = userBioText ?: "No bio available.",
                     text = profDescription,
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
@@ -178,6 +197,8 @@ fun ProfileScreen(navController: NavController? = null) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
+                modifier = Modifier.background(Color.LightGray),
+                containerColor = Color.Black,
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
@@ -212,13 +233,13 @@ fun ProfileScreen(navController: NavController? = null) {
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfileUsersPosts(imageUrls = imageUrls)
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfilePosts(images = images.value)
+                        ProfileLikedPosts(posts = likedPosts.value)
                     }
                 }
             }
@@ -311,5 +332,47 @@ fun EditPopup(oldUsername:String, oldDescription:String, oldImageResource: Int, 
                 }
             }
         )
+fun ProfileUsersPosts(imageUrls: List<String>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3)
+    ) {
+        itemsIndexed(imageUrls) { _, imageUrl ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f) // Set the aspect ratio to make images square
+                    .padding(8.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = imageUrl),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(1.1f) // Apply the scaling factor to individual images
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileLikedPosts(posts: List<Post>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3)
+    ) {
+        items(posts) { post ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .padding(8.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = post.imageUrl),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
     }
 }

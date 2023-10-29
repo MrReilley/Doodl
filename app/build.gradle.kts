@@ -101,4 +101,9 @@ dependencies {
 
     // Color Picker
     implementation("com.github.skydoves:colorpicker-compose:1.0.5")
+    //Coil
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
+
+
 }

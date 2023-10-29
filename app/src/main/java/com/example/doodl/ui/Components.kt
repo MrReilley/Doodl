@@ -24,9 +24,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -218,6 +223,8 @@ fun BottomNavigationBar(navController: NavController,
                         onHeightCalculated: (Int) -> Unit) {
     // Remember the last height of the BottomNavigation; initialized to -1 as a placeholder value
     var lastHeight by remember { mutableIntStateOf(-1) }
+    var lastHeight by remember { mutableStateOf(-1)}
+    val currentRoute = navController.currentDestination?.route
     BottomNavigation(
         modifier = modifier // Apply the passed modifier
             .onGloballyPositioned { layoutInfo ->
@@ -231,7 +238,10 @@ fun BottomNavigationBar(navController: NavController,
         backgroundColor = MaterialTheme.colorScheme.primary,
     ) {
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "feed") Icons.Default.Home else Icons.Outlined.Home
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Feed") },
             selected = navController.currentDestination?.route == "feed",
             onClick = {
@@ -242,7 +252,10 @@ fun BottomNavigationBar(navController: NavController,
             }
         )
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "canvas") Icons.Default.Brush else Icons.Outlined.Brush
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Canvas") },
             selected = navController.currentDestination?.route == "canvas",
             onClick = {
@@ -253,9 +266,24 @@ fun BottomNavigationBar(navController: NavController,
             }
         )
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "profile") Icons.Default.Person else Icons.Outlined.Person
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Profile") },
             selected = navController.currentDestination?.route == "profile",
+            onClick = { navController.navigate("profile") }
+        )
+    }
+}
+
+fun logout(navController: NavController) {
+    FirebaseAuth.getInstance().signOut()
+    navController.navigate("loginScreen") {
+        // This will clear everything on the back stack up to, but not including, "loginScreen".
+        popUpTo("loginScreen") { inclusive = false }
+        // This will clear any existing tasks so that the user cannot go back to the previous screen after logging out.
+        launchSingleTop = true
             onClick = {
                 if (currentRoute != "profile") {
                     // Only navigate if the current route is different from the selected route
