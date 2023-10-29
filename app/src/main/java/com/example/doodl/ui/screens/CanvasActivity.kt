@@ -1,10 +1,15 @@
 package com.example.doodl.ui.screens
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,16 +18,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -30,22 +42,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.doodl.R
-import com.example.doodl.data.repository.Repository
+import androidx.navigation.NavController
 import com.example.doodl.ui.colorButton
 import com.example.doodl.ui.drawCanvas
 import com.example.doodl.ui.eraserButton
 import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
-import com.example.doodl.viewmodel.CanvasViewModelFactory
 import com.github.skydoves.colorpicker.compose.AlphaSlider
 import com.github.skydoves.colorpicker.compose.AlphaTile
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
@@ -56,23 +66,24 @@ import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 // Composable functions for UI of each screen
 @Composable
 fun CanvasScreen(
-    navBarHeight: Int
+    navController: NavController,
+    navBarHeight: Int,
+    canvasViewModel: CanvasViewModel
 ) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
-    val repository = Repository()
-    val canvasViewModel: CanvasViewModel = viewModel(factory = CanvasViewModelFactory(repository))
     var selectedColor by remember { mutableStateOf(Color.Black) }
 
-    CanvasActivity(canvasViewModel, navBarHeight,  selectedColor) { newColor ->
+    CanvasActivity(navController, canvasViewModel, navBarHeight,  selectedColor) { newColor ->
         selectedColor = newColor
     }
 }
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CanvasActivity(
-    viewModel: CanvasViewModel,
+    navController: NavController,
+    canvasViewModel: CanvasViewModel,
     navBarHeight: Int,
     selectedColor: Color,
     updateSelectedColor: (Color) -> Unit
@@ -145,11 +156,11 @@ fun CanvasActivity(
                     onClick = {
                         if (paths.isNotEmpty()) {
                             val bitmap = generateBitmapFromPaths(paths, canvasSize.width, canvasSize.height)
-                            viewModel.uploadDrawing(bitmap)
-                            paths.clear()
+                            canvasViewModel.currentBitmap.value = bitmap
+                            navController.navigate("postInfo")
                         }
                     },
-                    enabled = !isColorPickerVisible.value
+                    enabled = !isColorPickerVisible.value && paths.isNotEmpty()
                 ) {
                     Text("Next", color = Color.Black)
                 }
@@ -297,5 +308,133 @@ fun CanvasActivity(
                }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun PostInfoScreen(
+    navController: NavController,
+    canvasViewModel: CanvasViewModel
+) {
+    val bitmap = canvasViewModel.currentBitmap.value
+    val context = LocalContext.current
+    val selectedTags = remember { mutableStateListOf<String>() }
+    val tagOptions = listOf(
+        "Abstract",
+        "Animal",
+        "Anime",
+        "Cute",
+        "Dramatic",
+        "Funny",
+        "Scary",
+        "Landscape",
+        "Mysterious",
+        "Nostalgic",
+        "Realism",
+        "Surreal"
+    )
+    var isUploading by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.popBackStack()
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Go Back")
+                    }
+                },
+                backgroundColor = MaterialTheme.colorScheme.primary
+            )
+        }
+    ) {
+            innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.tertiary)
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Image Preview
+            if (bitmap != null) {
+                val aspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                val previewWidth = 250.dp
+                val previewHeight = previewWidth / aspectRatio
+                Box(
+                    modifier = Modifier
+                        .width(previewWidth)
+                        .height(previewHeight)
+                        .border(2.dp, Color.LightGray)
+                ) {
+                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = "Preview")
+                }
+            }
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Center,
+                maxItemsInEachRow = 3
+            ) {
+                tagOptions.forEach { tag ->
+                    TagButton(tag, selectedTags)
+                }
+            }
+            Button(
+                onClick = {
+                    if (bitmap != null) {
+                        isUploading = true
+                        canvasViewModel.uploadDrawing(bitmap) { success ->
+                            isUploading = false
+                            if (success) {
+                                canvasViewModel.clearCurrentBitmap()
+                                navController.navigate("feed")
+                                val message = "Post successful"
+                                val duration = Toast.LENGTH_SHORT
+                                Toast.makeText(context, message, duration).show()
+                            } else {
+                                val message = "Post failed"
+                                val duration = Toast.LENGTH_SHORT
+                                Toast.makeText(context, message, duration).show()
+                            }
+                        }
+                    }
+                },
+                enabled = !isUploading
+            ) {
+                if(isUploading) {
+                    CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
+                } else {
+                    Text("Share", color = Color.Black)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TagButton(tag: String, selectedTags: MutableList<String>) {
+    val isSelected = remember { mutableStateOf(false) }
+    Button(
+        onClick = {
+            isSelected.value = !isSelected.value
+            if (isSelected.value) {
+                selectedTags.add(tag)
+            } else {
+                selectedTags.remove(tag)
+            }
+        },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected.value) Color.Green else Color.LightGray
+        ),
+        modifier = Modifier.padding(4.dp)
+    ) {
+        Text(tag, color = Color.Black)
     }
 }
