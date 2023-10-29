@@ -3,6 +3,7 @@ package com.example.doodl.viewmodel
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.doodl.data.repository.Repository
@@ -17,19 +18,27 @@ import java.io.ByteArrayOutputStream
 // Firebase Storage without tying this logic directly into UI components, enhancing code organization and maintainability.
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
-
-    fun uploadDrawing(bitmap: Bitmap) {
+    val currentBitmap: MutableLiveData<Bitmap?> = MutableLiveData(null)
+    fun uploadDrawing(bitmap: Bitmap, onComplete: (Boolean) -> Unit) {
         try {
             val byteArray = bitmapToByteArray(bitmap)
             val uploadTask = repository.uploadByteArray(byteArray)
             uploadTask.addOnSuccessListener {
                 Log.d("CanvasViewModel", "Upload successful")
+                onComplete(true)
             }.addOnFailureListener { exception: Exception ->
                 Log.e("CanvasViewModel", "Upload failed: ${exception.message}")
+                onComplete(false)
             }
         } catch (e: Exception) {
             Log.e("CanvasViewModel", "Bitmap to byte array conversion failed: ${e.message}")
+            onComplete(false)
         }
+    }
+
+    fun clearCurrentBitmap() {
+        currentBitmap.value?.recycle()
+        currentBitmap.value = null
     }
 
     @Throws(Exception::class)
