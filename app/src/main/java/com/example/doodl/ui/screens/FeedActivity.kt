@@ -119,20 +119,26 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, feedViewModel: Fe
                             alignment = Alignment.TopEnd,
                             modifier = Modifier.clickable {
                                 // Toggle the applyColorFilter when the image is clicked
-                                applyColorFilter = !applyColorFilter
-                                if(applyColorFilter){
-                                    feedViewModel.likePost(post.postId)
-                                    val message = "You liked a post"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
-                                    Toast.makeText(context, message, duration).show()
-                                }else{
-                                    feedViewModel.unlikePost(post.postId)
-                                    val message = "You disliked a post"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
-                                    Toast.makeText(context, message, duration).show()
+                                val currentTimeStamp = System.currentTimeMillis()
+                                if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
+                                    applyColorFilter = !applyColorFilter
+                                    if(applyColorFilter){
+                                        feedViewModel.likePost(post.postId)
+                                        val message = "You liked a post"
+                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                        // Display a toast message using the obtained context
+                                        Toast.makeText(context, message, duration).show()
+                                    }else{
+                                        feedViewModel.unlikePost(post.postId)
+                                        val message = "You disliked a post"
+                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
+                                        // Display a toast message using the obtained context
+                                        Toast.makeText(context, message, duration).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
                                 }
+
                             }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp))

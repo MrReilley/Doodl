@@ -28,6 +28,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _likesCountForPosts = MutableLiveData<Map<String, Int>>()
     private val _userLikedPosts = MutableLiveData<List<String>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
+    var lastLikeTimestamp = 0L // Timestamp of the last like action
+    val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
@@ -118,7 +120,14 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     }
 
     fun likePost(postId: String) {
-        // First check if the post is already liked by the user
+        val currentTimestamp = System.currentTimeMillis()
+        if (currentTimestamp - lastLikeTimestamp < likeCooldown) {
+            Log.d("FeedViewModel", "Like action is on cooldown.")
+            return
+        }
+
+        lastLikeTimestamp = currentTimestamp
+
         repository.isPostLikedByUser(postId, userId).addOnSuccessListener { querySnapshot ->
             if (querySnapshot.isEmpty) { // if not liked yet
                 val likeId = UUID.randomUUID().toString()
@@ -141,7 +150,14 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     }
 
     fun unlikePost(postId: String) {
-        // Find the like document for this user and post
+        val currentTimestamp = System.currentTimeMillis()
+        if (currentTimestamp - lastLikeTimestamp < likeCooldown) {
+            Log.d("FeedViewModel", "Unlike action is on cooldown.")
+            return
+        }
+
+        lastLikeTimestamp = currentTimestamp
+
         repository.isPostLikedByUser(postId, userId).addOnSuccessListener { querySnapshot ->
             val likeDocument = querySnapshot.documents.firstOrNull()
             likeDocument?.let {
