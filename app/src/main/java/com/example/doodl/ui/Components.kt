@@ -13,10 +13,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -193,6 +197,7 @@ fun BottomNavigationBar(navController: NavController,
                         onHeightCalculated: (Int) -> Unit) {
     // Remember the last height of the BottomNavigation; initialized to -1 as a placeholder value
     var lastHeight by remember { mutableStateOf(-1)}
+    val currentRoute = navController.currentDestination?.route
     BottomNavigation(
         modifier = modifier // Apply the passed modifier
             .onGloballyPositioned { layoutInfo ->
@@ -206,19 +211,28 @@ fun BottomNavigationBar(navController: NavController,
         backgroundColor = MaterialTheme.colorScheme.primary,
     ) {
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "feed") Icons.Default.Home else Icons.Outlined.Home
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Feed") },
             selected = navController.currentDestination?.route == "feed",
             onClick = { navController.navigate("feed") }
         )
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "canvas") Icons.Default.Brush else Icons.Outlined.Brush
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Canvas") },
             selected = navController.currentDestination?.route == "canvas",
             onClick = { navController.navigate("canvas") }
         )
         BottomNavigationItem(
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            icon = {
+                val icon = if (currentRoute == "profile") Icons.Default.Person else Icons.Outlined.Person
+                Icon(icon, contentDescription = null)
+            },
             label = { Text("Profile") },
             selected = navController.currentDestination?.route == "profile",
             onClick = { navController.navigate("profile") }
