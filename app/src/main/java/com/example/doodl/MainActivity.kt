@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DoodlTheme(
-                darkTheme = false,
+                darkTheme = true,
                 dynamicColor = false
             ) {
                 // A surface container using the 'background' color from the theme

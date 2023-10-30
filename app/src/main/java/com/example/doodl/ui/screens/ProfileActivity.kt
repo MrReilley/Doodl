@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -79,7 +80,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.LightGray)
+                .background(Color.Black)
         ){
                 // feed card layout
             Row(
@@ -94,7 +95,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                     fontSize = 30.sp,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
-                    color = Color.Black
+                    color = Color.White
                 )
                 Spacer(modifier = Modifier.width(100.dp))
                 Text(
@@ -123,7 +124,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
                     softWrap = true,
-                    color = Color.Black
+                    color = Color.White
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
@@ -136,7 +137,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = Color.Blue
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             ) {
