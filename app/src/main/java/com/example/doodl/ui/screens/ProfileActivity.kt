@@ -95,7 +95,9 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
 
-
+    val onNameUpdated: (String) -> Unit = { newName ->
+        userName = newName
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -148,13 +150,14 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                         userName = newUsername
                         userBioText = newDescription
                         profileImage = newProfilePicture
-                    }
-                    )
+                    },
+                    onNameUpdated = onNameUpdated // Pass the lambda function
+                )
                 Spacer(modifier = Modifier.weight(0.15f))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
                             if (navController != null) {
@@ -162,19 +165,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                             }
                         }
                 )
-                /*Text(
-                    text = "logout",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Color.Blue,
-                    modifier = Modifier
-                        .clickable {
-                            if (navController != null) {
-                                logout(navController)
-                            }
-                        }
-                        .fillMaxWidth()
-                )*/
             }
             Spacer(modifier = Modifier.width(25.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -201,7 +191,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {
@@ -247,10 +237,17 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
 }
 
 @Composable
-fun EditPopup(oldUsername:String, oldDescription:String? , oldImageResource: Int, selectedProfilePicture: MutableState<Int>, onTextUpdated: (newUsername: String, newDescription: String?, newImageResource: Int) -> Unit) {
+fun EditPopup(
+    oldUsername: String,
+    oldDescription: String?,
+    oldImageResource: Int,
+    selectedProfilePicture: MutableState<Int>,
+    onTextUpdated: (newUsername: String, newDescription: String?, newImageResource: Int) -> Unit,
+    onNameUpdated: (newName: String) -> Unit // Add a new callback for name update
+) {
     var isEditable by remember { mutableStateOf(false) }
-    var username by remember { mutableStateOf(oldUsername) }
-    var description:String? by remember { mutableStateOf(oldDescription) }
+    var editedName by remember { mutableStateOf(oldUsername) } // Use editedName
+    var description: String? by remember { mutableStateOf(oldDescription) }
     var profilePicture by remember { mutableIntStateOf(oldImageResource) }
     val profilePictures = listOf(
         R.drawable.downloadicon,
@@ -258,82 +255,76 @@ fun EditPopup(oldUsername:String, oldDescription:String? , oldImageResource: Int
         R.drawable.ic_grid,
         R.drawable.likeicon
     )
+
     Column {
-        /*ClickableText(
-            text = AnnotatedString("edit"),
-            onClick = {
-                isEditable = true
-            },
-            style = TextStyle(
-                color = Color.Blue,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(16.dp)
-        )*/
         Icon(
             imageVector = Icons.Default.Edit,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.tertiaryContainer,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clickable {
                     isEditable = true
                 }
         )
-    }
-    if (isEditable) {
-        AlertDialog(
-            onDismissRequest = {
-                isEditable = false
-            },
-            title = {
-                Text("Edit your profile")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        isEditable = false
-                        onTextUpdated(username, description, profilePicture)
-                        val updatedUserProfile = User(profilePicture, username, description)
-                        lastUserProfile.value = updatedUserProfile
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary
-                    )
-                ) {
-                    Text("Save")
-                }
-            },
-            text = {
-                Column {
-                    Text(text = "Set your profile picture")
-                    // List of selectable profile pictures
-                    LazyRow {
-                        items(profilePictures) { imageResource ->
-                            ProfilePictureItem(
-                                imageResource = imageResource,
-                                isSelected = imageResource == selectedProfilePicture.value,
-                                onProfilePictureSelected = {
-                                    selectedProfilePicture.value = imageResource
-                                    profilePicture = imageResource
-                                }
-                            )
+
+        if (isEditable) {
+            AlertDialog(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                onDismissRequest = {
+                    isEditable = false
+                },
+                title = {
+                    Text("Edit your profile")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            isEditable = false
+                            // Pass the editedName to the onNameUpdated callback
+                            onNameUpdated(editedName)
+                            onTextUpdated(editedName, description, profilePicture)
+                            val updatedUserProfile = User(profilePicture, editedName, description)
+                            lastUserProfile.value = updatedUserProfile
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Save", color = Color.Black)
+                    }
+                },
+                text = {
+                    Column {
+                        Text(text = "Set your profile picture", color = Color.Black)
+                        // List of selectable profile pictures
+                        LazyRow {
+                            items(profilePictures) { imageResource ->
+                                ProfilePictureItem(
+                                    imageResource = imageResource,
+                                    isSelected = imageResource == selectedProfilePicture.value,
+                                    onProfilePictureSelected = {
+                                        selectedProfilePicture.value = imageResource
+                                        profilePicture = imageResource
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                        // Use editedName for the name input field
+                        EditableTextField("Username", editedName) { newText ->
+                            editedName = newText // Update the editedName
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        var nDescription: String = description ?: ""
+                        EditableTextField("Description", nDescription) { newText ->
+                            nDescription = newText
+                            description = nDescription
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    EditableTextField("Username", username) { newText ->
-                        username = newText
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    var nDescription: String = description ?: ""
-                    EditableTextField("Description", nDescription) { newText ->
-                        nDescription = newText
-                    }
-                    description = nDescription
                 }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -376,7 +367,9 @@ fun ProfileLikedPosts(posts: List<Post>) {
                     painter = rememberAsyncImagePainter(model = post.imageUrl),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(1.1f) // Apply the scaling factor to individual images
                 )
             }
         }

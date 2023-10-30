@@ -1,6 +1,5 @@
 package com.example.doodl.ui
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -10,13 +9,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -45,15 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -69,7 +61,7 @@ import java.util.regex.Pattern
 // Composable functions for reusable UI components
 
 @Composable
-fun DrawCanvas(
+fun drawCanvas(
     paths: List<Triple<List<Offset>, Color, Float>>,
     currentPath: List<Offset>,
     selectedColor: Color,
@@ -119,7 +111,7 @@ fun DrawCanvas(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ColorButton(
+fun colorButton(
     selectedButtonId: String,
     buttonId: String,
     buttonColor: Color,
@@ -176,7 +168,7 @@ fun ColorButton(
 }
 
 @Composable
-fun EraserButton(
+fun eraserButton(
     selectedButtonId: String,
     onClick: () -> Unit,
     isColorPickerVisible: MutableState<Boolean>
@@ -310,13 +302,16 @@ fun RoundImageCard(
             painter = painterResource(id = image),
             contentDescription = null,
             contentScale = contentScale, // Set the content scale here
-            modifier = Modifier.fillMaxSize() // Make the image fill the available space
+            modifier = Modifier
+                .fillMaxSize() // Make the image fill the available space
+                .size(24.dp)  // Adjust the size of the icon as needed
+                .align(Alignment.CenterHorizontally)  // Center horizontally
         )
     }
 }
 
 
-@Composable
+/*@Composable
 fun ProfilePosts(images: List<Bitmap>) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3)
@@ -338,14 +333,14 @@ fun ProfilePosts(images: List<Bitmap>) {
             }
         }
     }
-}
+}*/
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column {
-        Text(text = label)
+        Text(text = label, color = Color.Black)
         BasicTextField(
             value = text,
             onValueChange = {
