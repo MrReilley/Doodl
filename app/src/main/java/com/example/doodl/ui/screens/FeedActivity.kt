@@ -19,7 +19,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +46,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
@@ -184,5 +186,21 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun RoundImageCard(
+    image: Int, modifier: Modifier = Modifier
+        .padding(8.dp)
+        .size(64.dp)
+) {
+    Card(shape = CircleShape, modifier = modifier) {
+        Image(
+            painter = painterResource(id = image),
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
     }
 }

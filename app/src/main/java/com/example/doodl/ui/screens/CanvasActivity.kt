@@ -46,15 +46,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.ColorButton
-import com.example.doodl.ui.DrawCanvas
-import com.example.doodl.ui.EraserButton
+import com.example.doodl.R
+import com.example.doodl.ui.colorButton
+import com.example.doodl.ui.drawCanvas
+import com.example.doodl.ui.eraserButton
 import com.example.doodl.util.generateBitmapFromPaths
 import com.example.doodl.util.handleDrawingActivityTouchEvent
 import com.example.doodl.viewmodel.CanvasViewModel
@@ -143,7 +143,7 @@ fun CanvasActivity(
                         redoPaths.add(lastPath)
                     }
                 }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Undo")
+                    Icon(painter = painterResource(id = R.drawable.undo), contentDescription = "Undo")
                 }
                 IconButton(onClick = {
                     if (!isColorPickerVisible.value && redoPaths.isNotEmpty()) {
@@ -151,7 +151,7 @@ fun CanvasActivity(
                         paths.add(lastRedoPath)
                     }
                 }) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Redo")
+                    Icon(painter = painterResource(id = R.drawable.redo), contentDescription = "Redo")
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -184,7 +184,7 @@ fun CanvasActivity(
                     )
 
                     buttons.forEach { (buttonId, buttonColor) ->
-                        ColorButton(
+                        colorButton(
                             selectedButtonId = selectedButtonId,
                             buttonId = buttonId,
                             buttonColor = buttonColor,
@@ -197,7 +197,7 @@ fun CanvasActivity(
                             updateSelectedButtonId = updateSelectedButtonId
                         )
                     }
-                    EraserButton(selectedButtonId, {
+                    eraserButton(selectedButtonId, {
                         updateSelectedColor(Color.White)
                         updateSelectedButtonId("eraserButton")
                     }, isColorPickerVisible)
@@ -238,7 +238,7 @@ fun CanvasActivity(
                     }
             ) {
                 // Draw the canvas using paths captured from touch event handler
-                DrawCanvas(paths, currentPath, selectedColor, brushSize)
+                drawCanvas(paths, currentPath, selectedColor, brushSize)
             }
             // Color Picker
             if (isColorPickerVisible.value) {
@@ -397,7 +397,7 @@ fun PostInfoScreen(
                     onClick = {
                         if (bitmap != null) {
                             isUploading = true
-                            canvasViewModel.uploadDrawing(bitmap) { success ->
+                            canvasViewModel.uploadDrawing(bitmap, selectedTags) { success ->
                                 isUploading = false
                                 if (success) {
                                     canvasViewModel.clearCurrentBitmap()

@@ -22,7 +22,7 @@ import java.util.UUID
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
     val currentBitmap: MutableLiveData<Bitmap?> = MutableLiveData(null)
-    fun uploadDrawing(bitmap: Bitmap, onComplete: (Boolean) -> Unit) {
+    fun uploadDrawing(bitmap: Bitmap, selectedTags: List<String>, onComplete: (Boolean) -> Unit) {
         try {
             val byteArray = bitmapToByteArray(bitmap)
             val uploadTask = repository.uploadByteArray(byteArray)
@@ -37,7 +37,7 @@ class CanvasViewModel(private val repository: Repository) : ViewModel() {
                     // Create a Post object
                     val postId = UUID.randomUUID().toString()
                     val timestamp = System.currentTimeMillis()
-                    val newPost = Post(postId, userId, username ?: "Anonymous", timestamp, imagePath)
+                    val newPost = Post(postId, userId, username ?: "Anonymous", timestamp, imagePath, tags = selectedTags)
 
                     // Save the post to Firestore
                     repository.savePostToFirestore(newPost)

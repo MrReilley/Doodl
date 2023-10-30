@@ -131,6 +131,23 @@ class Repository {
         return db.collection("posts").document(postId).get()
     }
 
+    fun getTagsForPost(postId: String): Task<List<String>> {
+        return db.collection("posts").document(postId).get()
+            .continueWith { task ->
+                if (task.isSuccessful) {
+                    val document = task.result
+                    if (document != null && document.exists()) {
+                        val tags = document.get("tags") as? List<String> ?: emptyList()
+                        return@continueWith tags
+                    } else {
+                        throw RuntimeException("Document does not exist")
+                    }
+                } else {
+                    throw task.exception ?: RuntimeException("Unknown error occurred")
+                }
+            }
+    }
+
 
 
 
