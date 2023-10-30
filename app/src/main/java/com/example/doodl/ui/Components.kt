@@ -25,9 +25,7 @@ import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Home
@@ -219,11 +217,9 @@ fun EraserButton(
 @Composable
 fun BottomNavigationBar(navController: NavController,
                         modifier: Modifier = Modifier,
-                        currentRoute: String?,
-                        onHeightCalculated: (Int) -> Unit) {
+                        onHeightCalculated: (Int) -> Unit){
     // Remember the last height of the BottomNavigation; initialized to -1 as a placeholder value
     var lastHeight by remember { mutableIntStateOf(-1) }
-    var lastHeight by remember { mutableStateOf(-1)}
     val currentRoute = navController.currentDestination?.route
     BottomNavigation(
         modifier = modifier // Apply the passed modifier
@@ -284,13 +280,6 @@ fun logout(navController: NavController) {
         popUpTo("loginScreen") { inclusive = false }
         // This will clear any existing tasks so that the user cannot go back to the previous screen after logging out.
         launchSingleTop = true
-            onClick = {
-                if (currentRoute != "profile") {
-                    // Only navigate if the current route is different from the selected route
-                    navController.navigate("profile")
-                }
-            }
-        )
     }
 }
 
@@ -305,13 +294,6 @@ fun containsLetterAndNumber(password: String): Boolean {
     val hasLetter = password.any { it.isLetter() }
     val hasDigit = password.any { it.isDigit() }
     return hasLetter && hasDigit
-}
-
-fun logout(navController: NavController) {
-    FirebaseAuth.getInstance().signOut()
-    navController.navigate("loginScreen") {
-        popUpTo("loginScreen") { inclusive = true }
-    }
 }
 
 @Composable

@@ -29,6 +29,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _userLikedAPost = MutableLiveData<List<String>>()
     private val _likedPosts = MutableLiveData<List<Post>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
+    private val _postTags = MutableLiveData<Map<String, List<String>>>()
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
@@ -36,7 +37,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val userLikedAPost: LiveData<List<String>> get() = _userLikedAPost
     val likedPosts: LiveData<List<Post>> get() = _likedPosts
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
-
+    val postTags: LiveData<Map<String, List<String>>> get() = _postTags
 
     val userName = MutableLiveData<String>()
     val userBio = MutableLiveData<String?>()

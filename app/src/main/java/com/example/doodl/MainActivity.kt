@@ -45,10 +45,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DoodlTheme(
-                darkTheme = true,
-                dynamicColor = true
-            ) {
-            DoodlTheme(
                 darkTheme = false,
                 dynamicColor = false
             ) {
@@ -103,7 +99,7 @@ class MainActivity : ComponentActivity() {
                         // Bottom Navigation Bar
                         // Only display it if currentRoute is either "canvas" ,"feed", or "profile"
                         if(currentRoute in listOf("canvas", "feed", "profile")) {
-                            BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter), currentRoute) { height ->
+                            BottomNavigationBar(navController, Modifier.align(Alignment.BottomCenter)) { height ->
                                 navBarHeight = height
                             }
                         }

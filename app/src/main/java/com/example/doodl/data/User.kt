@@ -11,5 +11,5 @@ data class DoodlUser(
 data class User(
     val profileImageResource: Int,
     val username: String,
-    val description: String
+    val description: String?
 )

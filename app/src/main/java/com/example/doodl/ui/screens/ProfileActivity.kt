@@ -5,15 +5,21 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -23,10 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -55,12 +58,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
-import com.example.doodl.data.User
 import com.example.doodl.data.Post
+import com.example.doodl.data.User
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.ProfilePictureItem
-import com.example.doodl.ui.ProfilePosts
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
@@ -82,15 +84,15 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
         feedViewModel.fetchLikedPosts()
     }
     var profileImage by remember { mutableIntStateOf(lastUserProfile.value.profileImageResource) }
-    var profUsername by remember { mutableStateOf(lastUserProfile.value.username) }
-    var profDescription by remember { mutableStateOf(lastUserProfile.value.description) }
+    //var userName by remember { mutableStateOf(lastUserProfile.value.username) }
+    //var userBioText by remember { mutableStateOf(lastUserProfile.value.description) }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
-    val userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+    var userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
-    val userBioText = feedViewModel.userBio.observeAsState(null).value
+    var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
 
 
@@ -109,9 +111,9 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(text = "")
-                if (profUsername.length >= 14) {
+                if (userName.length >= 14) {
                     Spacer(modifier = Modifier.width(110.dp))
-                }else if(profUsername.length >= 20){
+                }else if(userName.length >= 20){
                     Spacer(modifier = Modifier.width(90.dp))
                 }
                 else{
@@ -119,16 +121,15 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 }
                 val maxUsernameLength = 20
                 Text(
-                    text = userName,
-                    text = if(profUsername.length > maxUsernameLength) {
-                        profUsername.take(maxUsernameLength)
+                    text = if(userName.length > maxUsernameLength) {
+                        userName.take(maxUsernameLength)
                     }else{
-                        profUsername
+                        userName
                          },
                     fontWeight = FontWeight.Bold,
-                    fontSize = if (profUsername.length >= 15) {
+                    fontSize = if (userName.length >= 15) {
                         19.sp
-                    }else if(profUsername.length >= 20){
+                    }else if(userName.length >= 20){
                         16.sp
                     }else{
                         30.sp
@@ -139,13 +140,13 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 )
                 Spacer(modifier = Modifier.weight(0.9f))
                 EditPopup(
-                    profUsername,
-                    profDescription,
+                    userName,
+                    userBioText,
                     profileImage,
                     selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
                     onTextUpdated = { newUsername, newDescription, newProfilePicture ->
-                        profUsername = newUsername
-                        profDescription = newDescription
+                        userName = newUsername
+                        userBioText = newDescription
                         profileImage = newProfilePicture
                     }
                     )
@@ -185,7 +186,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 )
                 Text(
                     text = userBioText ?: "No bio available.",
-                    text = profDescription,
                     letterSpacing = 0.5.sp,
                     lineHeight = 20.sp,
                     softWrap = true,
@@ -197,7 +197,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
-                modifier = Modifier.background(Color.LightGray),
                 containerColor = Color.Black,
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
@@ -248,10 +247,10 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
 }
 
 @Composable
-fun EditPopup(oldUsername:String, oldDescription:String, oldImageResource: Int, selectedProfilePicture: MutableState<Int>, onTextUpdated: (newUsername: String, newDescription: String, newImageResource: Int) -> Unit) {
+fun EditPopup(oldUsername:String, oldDescription:String? , oldImageResource: Int, selectedProfilePicture: MutableState<Int>, onTextUpdated: (newUsername: String, newDescription: String?, newImageResource: Int) -> Unit) {
     var isEditable by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf(oldUsername) }
-    var description by remember { mutableStateOf(oldDescription) }
+    var description:String? by remember { mutableStateOf(oldDescription) }
     var profilePicture by remember { mutableIntStateOf(oldImageResource) }
     val profilePictures = listOf(
         R.drawable.downloadicon,
@@ -326,12 +325,19 @@ fun EditPopup(oldUsername:String, oldDescription:String, oldImageResource: Int, 
                         username = newText
                     }
                     Spacer(modifier = Modifier.height(20.dp))
-                    EditableTextField("Description", description) { newText ->
-                        description = newText
+
+                    var nDescription: String = description ?: ""
+                    EditableTextField("Description", nDescription) { newText ->
+                        nDescription = newText
                     }
+                    description = nDescription
                 }
             }
         )
+    }
+}
+
+        @Composable
 fun ProfileUsersPosts(imageUrls: List<String>) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3)

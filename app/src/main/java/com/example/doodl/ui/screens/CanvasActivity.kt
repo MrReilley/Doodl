@@ -50,9 +50,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
-import com.example.doodl.ui.colorButton
-import com.example.doodl.ui.drawCanvas
-import com.example.doodl.ui.eraserButton
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.ColorButton
