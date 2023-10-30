@@ -78,7 +78,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
     Column(
         modifier = Modifier
             .fillMaxSize()  // Fill the entires available screen size.
-            .background(MaterialTheme.colorScheme.tertiary)  // Apply padding of 16dp to every side of the column.
+            .background(Color.Black)  // Apply padding of 16dp to every side of the column.
             .padding(16.dp),
         verticalArrangement = Arrangement.Center  // Vertically center the contents of the column.
     ) {
@@ -89,7 +89,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             modifier = Modifier.weight(1f)  // Occupy the remaining available vertical space.
         ) {
             // Text Composable to display a title or heading.
-            Text("Log in Doodler!", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+            Text("Log in Doodler!", fontWeight = FontWeight.Bold, fontSize = 24.sp, color= Color.White)
 
             // Provide a vertical space of 16dp.
             Spacer(modifier = Modifier.height(16.dp))
@@ -112,9 +112,12 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = Color.Black,
-                    cursorColor = MaterialTheme.colorScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
 
@@ -140,9 +143,12 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = Color.Black,
-                    cursorColor = MaterialTheme.colorScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
 
@@ -154,7 +160,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
-                Text("Login")
+                Text("Login", color=Color.White)
             }
         }
 
@@ -167,6 +173,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
         ) {
             // Text Composable for informing users they can register.
             Text("Don't have an account?",
+                color=Color.White,
                 modifier = Modifier.align(Alignment.CenterVertically)
             )
 
@@ -179,7 +186,7 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
-                Text("Register")
+                Text("Register", color=Color.White)
             }
             LoginStateNavigation(authState, navController, activity, authViewModel)
         }

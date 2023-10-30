@@ -83,7 +83,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.LightGray)
+                    .background(Color.Black)
             ) {
                 Column(
                     modifier = Modifier
@@ -99,7 +99,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold)
+                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
                     }
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it

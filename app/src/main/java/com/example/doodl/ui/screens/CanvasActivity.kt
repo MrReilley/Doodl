@@ -356,7 +356,7 @@ fun PostInfoScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.tertiary)
+                .background(Color.Black)
                 .padding(innerPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center,
@@ -418,7 +418,7 @@ fun PostInfoScreen(
                     if (isUploading) {
                         CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
                     } else {
-                        Text("Share", color = Color.Black)
+                        Text("Share", color = Color.White)
                     }
                 }
             }
@@ -439,10 +439,10 @@ fun TagButton(tag: String, selectedTags: MutableList<String>) {
             }
         },
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected.value) Color.Green else Color.LightGray
+            containerColor = if (isSelected.value) MaterialTheme.colorScheme.tertiary else Color.DarkGray
         ),
         modifier = Modifier.padding(4.dp)
     ) {
-        Text(tag, color = Color.Black)
+        Text(tag, color = if(isSelected.value) Color.Black else Color.White)
     }
 }
