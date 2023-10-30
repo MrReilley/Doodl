@@ -86,7 +86,7 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
                         // Navigate back to the previous screen when the navigation icon is clicked.
                         navController?.popBackStack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Navigate Up")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Navigate Up", tint= Color.White)
                     }
                 },
                 backgroundColor = MaterialTheme.colorScheme.primary
@@ -100,13 +100,13 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
             modifier = Modifier
                 .fillMaxSize() // Make column take up all available space.
                 .padding(innerPadding) // Apply padding provided by Scaffold to avoid overlap with TopAppBar.
-                .background(MaterialTheme.colorScheme.tertiary)
+                .background(Color.Black)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally, // Horizontally center child composables.
             verticalArrangement = Arrangement.Center // Vertically arrange children with center alignment.
         ) {
             // Text composable to display a static text string ("Create Account").
-            Text("Create Account", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+            Text("Create Account", fontWeight = FontWeight.Bold, fontSize = 24.sp, color=Color.White)
 
             Spacer(modifier = Modifier.height(16.dp)) // Provide vertical spacing.
 
@@ -129,9 +129,12 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = Color.Black,
-                    cursorColor = MaterialTheme.colorScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
 
@@ -156,9 +159,12 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = Color.Black,
-                    cursorColor = MaterialTheme.colorScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
 
@@ -184,9 +190,12 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
                     }
                 ),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = Color.Black,
-                    cursorColor = MaterialTheme.colorScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
 
@@ -198,7 +207,7 @@ fun RegistrationScreen(navController: NavController? = null, activity: Component
             },
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary))
             {
-                Text("Register")
+                Text("Register", color=Color.White)
             }
             RegistrationStateNavigation(authState, navController, hasNavigated, {
                 hasNavigated = true

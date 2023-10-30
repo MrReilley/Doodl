@@ -83,7 +83,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.secondary)
+                    .background(Color.Black)
             ) {
                 Column(
                     modifier = Modifier
@@ -99,9 +99,8 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold)
+                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
                     }
-                    Divider(color = MaterialTheme.colorScheme.secondary,modifier = Modifier.fillMaxWidth())
                     Image(
                         // Convert Bitmap to a format Image composable understands and renders it
                         painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
@@ -113,7 +112,6 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                             .padding(8.dp),
                         contentScale = ContentScale.Crop
                     )
-                    Divider(color = MaterialTheme.colorScheme.secondary,modifier = Modifier.fillMaxWidth())
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = R.drawable.likeicon),
