@@ -13,11 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Home
@@ -301,39 +302,15 @@ fun RoundImageCard(
         Image(
             painter = painterResource(id = image),
             contentDescription = null,
-            contentScale = contentScale, // Set the content scale here
+            contentScale = contentScale,
             modifier = Modifier
-                .fillMaxSize() // Make the image fill the available space
-                .size(24.dp)  // Adjust the size of the icon as needed
-                .align(Alignment.CenterHorizontally)  // Center horizontally
+                .fillMaxSize()
+                .size(24.dp)
+                .align(Alignment.CenterHorizontally)
         )
     }
 }
 
-
-/*@Composable
-fun ProfilePosts(images: List<Bitmap>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3)
-    ) {
-        itemsIndexed(images) { _, image ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f) // Set the aspect ratio to make images square
-                    .padding(8.dp)
-            ) {
-                Image(
-                    painter = remember { BitmapPainter(image.asImageBitmap()) },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(1.1f) // Apply the scaling factor to individual images
-                )
-            }
-        }
-    }
-}*/
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
@@ -341,11 +318,9 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
 
     Column {
         Text(text = label, color = Color.Black)
-        BasicTextField(
+        OutlinedTextField(
             value = text,
-            onValueChange = {
-                onTextChanged(it)
-            },
+            onValueChange = { onTextChanged(it) },
             textStyle = TextStyle(
                 color = Color.Black,
                 fontSize = 16.sp
@@ -357,12 +332,18 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 onDone = {
                     keyboardController?.hide()
                 }
+            ),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = Color.White,
+                focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedLabelColor = Color.White,
+                cursorColor = MaterialTheme.colorScheme.tertiary,
+                textColor = MaterialTheme.colorScheme.tertiary
             )
         )
     }
 }
-
-
 
 @Composable
 fun ProfilePictureItem(
@@ -391,4 +372,3 @@ fun ProfilePictureItem(
         )
     }
 }
-

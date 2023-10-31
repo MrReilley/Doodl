@@ -69,7 +69,7 @@ import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
-private var lastUserProfile = mutableStateOf(User(R.drawable.likeicon, "userName", "This is for the bio/description box for the template section of the profile page :)."))
+private var lastUserProfile = mutableStateOf(User(R.drawable.profpic7, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -247,10 +247,16 @@ fun EditPopup(
     var description: String? by remember { mutableStateOf(oldDescription) }
     var profilePicture by remember { mutableIntStateOf(oldImageResource) }
     val profilePictures = listOf(
-        R.drawable.downloadicon,
-        R.drawable.eraser,
-        R.drawable.ic_grid,
-        R.drawable.likeicon
+        R.drawable.profpic1,
+        R.drawable.profpic2,
+        R.drawable.profpic3,
+        R.drawable.profpic8,
+        R.drawable.profpic4,
+        R.drawable.profpic5,
+        R.drawable.profpic6,
+        R.drawable.profpic7,
+        R.drawable.profpic9,
+        R.drawable.profpic10
     )
 
     Column {

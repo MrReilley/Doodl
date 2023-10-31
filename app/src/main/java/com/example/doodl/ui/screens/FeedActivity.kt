@@ -154,9 +154,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                             }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
-
                         Spacer(modifier = Modifier.width(8.dp))
-
                         /*Image(
                             painter = painterResource(id = R.drawable.downloadicon),
                             contentDescription = "Download",
