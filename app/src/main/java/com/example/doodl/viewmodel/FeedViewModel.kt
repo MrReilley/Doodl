@@ -40,9 +40,9 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
 
 
-    val userName = MutableLiveData<String>()
-    val userBio = MutableLiveData<String?>()
-    val profilePic = MutableLiveData<Bitmap?>()
+    var userName = MutableLiveData<String>()
+    var userBio = MutableLiveData<String?>()
+    var profilePic = MutableLiveData<Bitmap?>()
 
     var lastLikeTimestamp = 0L // Timestamp of the last like action
     val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds

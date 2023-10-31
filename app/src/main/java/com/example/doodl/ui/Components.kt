@@ -1,26 +1,31 @@
 package com.example.doodl.ui
 
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,9 +33,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -39,14 +46,18 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
-import com.example.doodl.R
-
 // Composable functions for reusable UI components
 
 @Composable
@@ -58,7 +69,7 @@ fun drawCanvas(
 ) {
     Canvas(Modifier.fillMaxSize()) {
         drawRect(color = Color.White, size = size)
-        // Redraws previous canvas paths user has completed drawing to ensure all paths reapper if UI updates
+        // Redraws previous canvas paths user has completed drawing to ensure all paths reappear if UI updates
         // For each path in paths, spilt it into offsets, Color
         paths.forEach { (offsets, color, pathBrushSize) ->
             val graphicalPath = Path().apply {
@@ -130,7 +141,9 @@ fun colorButton(
                     // Color picker is visible and this button is not selected
                     (isColorPickerVisible.value && selectedButtonId != buttonId) -> {
                         Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                    } else -> {
+                    }
+
+                    else -> {
                         Modifier
                     }
                 }
@@ -178,7 +191,9 @@ fun eraserButton(
                     // Color picker is visible
                     isColorPickerVisible.value -> {
                         Modifier.background(Color.Gray.copy(alpha = 0.4f), CircleShape)
-                    } else -> {
+                    }
+
+                    else -> {
                         Modifier
                     }
                 }
@@ -194,9 +209,9 @@ fun eraserButton(
 @Composable
 fun BottomNavigationBar(navController: NavController,
                         modifier: Modifier = Modifier,
-                        onHeightCalculated: (Int) -> Unit) {
+                        onHeightCalculated: (Int) -> Unit){
     // Remember the last height of the BottomNavigation; initialized to -1 as a placeholder value
-    var lastHeight by remember { mutableStateOf(-1)}
+    var lastHeight by remember { mutableIntStateOf(-1) }
     val currentRoute = navController.currentDestination?.route
     BottomNavigation(
         modifier = modifier // Apply the passed modifier
@@ -217,7 +232,12 @@ fun BottomNavigationBar(navController: NavController,
             },
             label = { Text("Feed") },
             selected = navController.currentDestination?.route == "feed",
-            onClick = { navController.navigate("feed") }
+            onClick = {
+                if (currentRoute != "feed") {
+                    // Only navigate if the current route is different from the selected route
+                    navController.navigate("feed")
+                }
+            }
         )
         BottomNavigationItem(
             icon = {
@@ -226,7 +246,12 @@ fun BottomNavigationBar(navController: NavController,
             },
             label = { Text("Canvas") },
             selected = navController.currentDestination?.route == "canvas",
-            onClick = { navController.navigate("canvas") }
+            onClick = {
+                if (currentRoute != "canvas") {
+                    // Only navigate if the current route is different from the selected route
+                    navController.navigate("canvas")
+                }
+            }
         )
         BottomNavigationItem(
             icon = {
@@ -262,3 +287,108 @@ fun containsLetterAndNumber(password: String): Boolean {
     val hasDigit = password.any { it.isDigit() }
     return hasLetter && hasDigit
 }
+
+@Composable
+fun RoundImageCard(
+    image: Int,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
+) {
+    Card(
+        shape = CircleShape,
+        modifier = modifier
+    ) {
+        Image(
+            painter = painterResource(id = image),
+            contentDescription = null,
+            contentScale = contentScale, // Set the content scale here
+            modifier = Modifier
+                .fillMaxSize() // Make the image fill the available space
+                .size(24.dp)  // Adjust the size of the icon as needed
+                .align(Alignment.CenterHorizontally)  // Center horizontally
+        )
+    }
+}
+
+
+/*@Composable
+fun ProfilePosts(images: List<Bitmap>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3)
+    ) {
+        itemsIndexed(images) { _, image ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f) // Set the aspect ratio to make images square
+                    .padding(8.dp)
+            ) {
+                Image(
+                    painter = remember { BitmapPainter(image.asImageBitmap()) },
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(1.1f) // Apply the scaling factor to individual images
+                )
+            }
+        }
+    }
+}*/
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    Column {
+        Text(text = label, color = Color.Black)
+        BasicTextField(
+            value = text,
+            onValueChange = {
+                onTextChanged(it)
+            },
+            textStyle = TextStyle(
+                color = Color.Black,
+                fontSize = 16.sp
+            ),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    keyboardController?.hide()
+                }
+            )
+        )
+    }
+}
+
+
+
+@Composable
+fun ProfilePictureItem(
+    imageResource: Int,
+    isSelected: Boolean,
+    onProfilePictureSelected: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable {
+                onProfilePictureSelected()
+            }
+    ) {
+        Image(
+            painter = painterResource(id = imageResource),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(
+                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onBackground
+                )
+                .align(Alignment.Center)
+        )
+    }
+}
+
