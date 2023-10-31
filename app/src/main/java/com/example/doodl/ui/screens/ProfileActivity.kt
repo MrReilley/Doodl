@@ -69,7 +69,7 @@ import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
-private var lastUserProfile = mutableStateOf(User(R.drawable.profpic7, "userName", "This is for the bio/description box for the template section of the profile page :)."))
+private var lastUserProfile = mutableStateOf(User(R.drawable.profpic8, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {

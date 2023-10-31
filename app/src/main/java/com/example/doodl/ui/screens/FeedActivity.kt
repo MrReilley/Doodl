@@ -101,7 +101,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                     // feed card layout
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RoundImageCard(
-                            image = R.drawable.likeicon,
+                            image = R.drawable.profpic8,// needs replacing for user's pp
                             Modifier
                                 .size(48.dp)
                                 .padding(4.dp)
