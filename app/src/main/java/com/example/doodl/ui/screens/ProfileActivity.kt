@@ -299,7 +299,7 @@ fun EditPopup(
                             lastUserProfile.value = updatedUserProfile
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary
+                            containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
                         Text("Save", color = Color.Black)
