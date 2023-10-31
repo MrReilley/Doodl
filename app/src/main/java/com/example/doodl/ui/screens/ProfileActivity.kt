@@ -94,7 +94,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
-    var userName = feedViewModel.userName.observeAsState(initial = "Loading...").value
+    var userName = feedViewModel.userName.observeAsState(initial = "").value // changed loading... to ""
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())

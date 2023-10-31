@@ -51,10 +51,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
@@ -317,13 +315,10 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column {
-        Text(text = label, color = Color.White)
         OutlinedTextField(
             value = text,
             onValueChange = { onTextChanged(it) },
-            textStyle = TextStyle(
-                fontSize = 16.sp
-            ),
+            label = { Text(text = label)},
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done
             ),
