@@ -3,6 +3,7 @@ package com.example.doodl.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
@@ -69,7 +72,7 @@ import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
-private var lastUserProfile = mutableStateOf(User(R.drawable.likeicon, "userName", "This is for the bio/description box for the template section of the profile page :)."))
+private var lastUserProfile = mutableStateOf(User(R.drawable.profpic8, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -233,6 +236,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     }
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun EditPopup(
     oldUsername: String,
@@ -247,10 +251,16 @@ fun EditPopup(
     var description: String? by remember { mutableStateOf(oldDescription) }
     var profilePicture by remember { mutableIntStateOf(oldImageResource) }
     val profilePictures = listOf(
-        R.drawable.downloadicon,
-        R.drawable.eraser,
-        R.drawable.ic_grid,
-        R.drawable.likeicon
+        R.drawable.profpic1,
+        R.drawable.profpic2,
+        R.drawable.profpic3,
+        R.drawable.profpic8,
+        R.drawable.profpic4,
+        R.drawable.profpic5,
+        R.drawable.profpic6,
+        R.drawable.profpic7,
+        R.drawable.profpic9,
+        R.drawable.profpic10
     )
 
     Column {
@@ -266,12 +276,13 @@ fun EditPopup(
 
         if (isEditable) {
             AlertDialog(
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color.Black,
+                modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
                 onDismissRequest = {
                     isEditable = false
                 },
                 title = {
-                    Text("Edit your profile", color = Color.Black)
+                    Text("Edit your profile", color = Color.White)
                 },
                 confirmButton = {
                     Button(
@@ -292,7 +303,7 @@ fun EditPopup(
                 },
                 text = {
                     Column {
-                        Text(text = "Set your profile picture", color = Color.Black)
+                        Text(text = "Set your profile picture", color = Color.White)
                         // List of selectable profile pictures
                         LazyRow {
                             items(profilePictures) { imageResource ->
