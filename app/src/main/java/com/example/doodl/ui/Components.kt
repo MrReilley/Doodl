@@ -317,12 +317,12 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column {
-        Text(text = label, color = Color.Black)
+        Text(text = label, color = Color.White)
         OutlinedTextField(
             value = text,
             onValueChange = { onTextChanged(it) },
             textStyle = TextStyle(
-                color = Color.Black,
+                color = Color.White,
                 fontSize = 16.sp
             ),
             keyboardOptions = KeyboardOptions.Default.copy(

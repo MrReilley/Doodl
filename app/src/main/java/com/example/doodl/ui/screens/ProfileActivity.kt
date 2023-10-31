@@ -3,6 +3,7 @@ package com.example.doodl.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
@@ -233,6 +236,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     }
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun EditPopup(
     oldUsername: String,
@@ -272,12 +276,13 @@ fun EditPopup(
 
         if (isEditable) {
             AlertDialog(
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color.Black,
+                modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
                 onDismissRequest = {
                     isEditable = false
                 },
                 title = {
-                    Text("Edit your profile", color = Color.Black)
+                    Text("Edit your profile", color = Color.White)
                 },
                 confirmButton = {
                     Button(
@@ -298,7 +303,7 @@ fun EditPopup(
                 },
                 text = {
                     Column {
-                        Text(text = "Set your profile picture", color = Color.Black)
+                        Text(text = "Set your profile picture", color = Color.White)
                         // List of selectable profile pictures
                         LazyRow {
                             items(profilePictures) { imageResource ->
