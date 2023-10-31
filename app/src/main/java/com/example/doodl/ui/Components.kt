@@ -347,7 +347,7 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 onTextChanged(it)
             },
             textStyle = TextStyle(
-                color = Color.White,
+                color = Color.Black,
                 fontSize = 16.sp
             ),
             keyboardOptions = KeyboardOptions.Default.copy(
@@ -385,7 +385,7 @@ fun ProfilePictureItem(
                 .size(100.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .background(
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onBackground
                 )
                 .align(Alignment.Center)
         )

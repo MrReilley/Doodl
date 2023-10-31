@@ -84,14 +84,14 @@ class MainActivity : ComponentActivity() {
                                 Log.d("MainActivity", "Navigating to feed")
                                 val userId = FirebaseAuth.getInstance().currentUser?.uid
                                     ?: throw IllegalStateException("User must be logged in to access the feed.")
-                                FeedScreen(userId)
+                                FeedScreen(userId, navBarHeight)
                             }
                             composable("profile") {
                                 val currentUser = FirebaseAuth.getInstance().currentUser
                                 if (currentUser == null) {
                                     navController.navigate("loginScreen")
                                 } else {
-                                    ProfileScreen(currentUser.uid, navController)
+                                    ProfileScreen(currentUser.uid, navController, navBarHeight = navBarHeight)
                                 }
                             }
                         }

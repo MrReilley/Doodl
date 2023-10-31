@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -49,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,7 +72,7 @@ import com.example.doodl.viewmodel.FeedViewModelFactory
 private var lastUserProfile = mutableStateOf(User(R.drawable.likeicon, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
-fun ProfileScreen(userId: String, navController: NavController? = null) {
+fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
@@ -114,6 +114,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(text = "")
+                Spacer(modifier = Modifier.width(15.dp))
+                /*
                 if (userName.length >= 14) {
                     Spacer(modifier = Modifier.width(110.dp))
                 }else if(userName.length >= 20){
@@ -121,27 +123,19 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 }
                 else{
                     Spacer(modifier = Modifier.width(140.dp))
-                }
-                val maxUsernameLength = 20
+                }*/
+                val maxUsernameLength = 15
+
                 Text(
-                    text = if(userName.length > maxUsernameLength) {
-                        userName.take(maxUsernameLength)
-                    }else{
-                        userName
-                         },
+                    text = userName,
                     fontWeight = FontWeight.Bold,
-                    fontSize = if (userName.length >= 15) {
-                        19.sp
-                    }else if(userName.length >= 20){
-                        16.sp
-                    }else{
-                        30.sp
-                         },
+                    fontSize = 30.sp,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.weight(0.9f))
+                //Spacer(modifier = Modifier.weight(0.05f))
+                Spacer(modifier = Modifier.width(155.dp))
                 EditPopup(
                     userName,
                     userBioText,
@@ -154,7 +148,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                     },
                     onNameUpdated = onNameUpdated // Pass the lambda function
                 )
-                Spacer(modifier = Modifier.weight(0.15f))
+                //Spacer(modifier = Modifier.weight(0.002f))
+                Spacer(modifier = Modifier.width(15.dp))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = null,
@@ -172,9 +167,10 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 RoundImageCard(
                     image = profileImage,
                     Modifier
-                        .size(125.dp)
-                        .padding(4.dp)
+                        .size(115.dp)
+                        .padding(5.dp)
                 )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = userBioText ?: "No bio available.",
                     letterSpacing = 0.5.sp,
@@ -223,13 +219,13 @@ fun ProfileScreen(userId: String, navController: NavController? = null) {
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileUsersPosts(imageUrls = imageUrls)
+                        ProfileUsersPosts(imageUrls = imageUrls, navBarHeight = navBarHeight )
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileLikedPosts(posts = likedPosts.value)
+                        ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
                     }
                 }
             }
@@ -270,12 +266,12 @@ fun EditPopup(
 
         if (isEditable) {
             AlertDialog(
-                containerColor = MaterialTheme.colorScheme.secondary,
+                containerColor = MaterialTheme.colorScheme.primary,
                 onDismissRequest = {
                     isEditable = false
                 },
                 title = {
-                    Text("Edit your profile")
+                    Text("Edit your profile", color = Color.Black)
                 },
                 confirmButton = {
                     Button(
@@ -288,7 +284,7 @@ fun EditPopup(
                             lastUserProfile.value = updatedUserProfile
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.tertiary
                         )
                     ) {
                         Text("Save", color = Color.Black)
@@ -330,49 +326,81 @@ fun EditPopup(
 }
 
         @Composable
-fun ProfileUsersPosts(imageUrls: List<String>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3)
-    ) {
-        itemsIndexed(imageUrls) { _, imageUrl ->
+fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
+            val configuration = LocalConfiguration.current
+            val maxScreenHeightDp = configuration.screenHeightDp.dp
+            val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
+            val availableHeight = maxScreenHeight - navBarHeight
             Box(
-                modifier = Modifier
-                    .aspectRatio(1f) // Set the aspect ratio to make images square
-                    .padding(8.dp)
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            ){
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.height(availableHeight.dp)
+                ) {
+                    itemsIndexed(imageUrls) { index, imageUrl ->
+                        val itemsPerRow = 3
+                        val rowNumber = index / itemsPerRow
+                        val isLastRow = rowNumber == (imageUrls.size - 1) / itemsPerRow
+                        Box(
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .padding(8.dp)
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(model = imageUrl),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .scale(1.1f) // Apply the scaling factor to individual images
+                            )
+                        }
+                        if (isLastRow) {
+                            Spacer(modifier = Modifier.padding(bottom = 195.dp))
+                        }
+                    }
+                }
+            }
+}
+
+@Composable
+fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
+    val configuration = LocalConfiguration.current
+    val maxScreenHeightDp = configuration.screenHeightDp.dp
+    val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
+    val availableHeight = maxScreenHeight - navBarHeight
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.height(availableHeight.dp)
+        ) {
+            itemsIndexed(posts) { index, post ->
+                val itemsPerRow = 3
+                val rowNumber = index / itemsPerRow
+                val isLastRow = rowNumber == (posts.size - 1) / itemsPerRow
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .scale(1.1f) // Apply the scaling factor to individual images
-                )
+                        .aspectRatio(1f)
+                        .padding(8.dp)
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = post.imageUrl),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(1.1f) // Apply the scaling factor to individual images
+                    )
+                }
+                if (isLastRow) {
+                    Spacer(modifier = Modifier.padding(bottom = 195.dp))
+                }
             }
         }
     }
 }
 
-@Composable
-fun ProfileLikedPosts(posts: List<Post>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3)
-    ) {
-        items(posts) { post ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(8.dp)
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = post.imageUrl),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(1.1f) // Apply the scaling factor to individual images
-                )
-            }
-        }
-    }
-}

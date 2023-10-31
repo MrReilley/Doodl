@@ -12,16 +12,16 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +51,7 @@ import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
 @Composable
-fun FeedScreen(userId: String) {
+fun FeedScreen(userId: String, navBarHeight: Int) {
     BackHandler {
         // Do nothing, effectively disabling the back button
     }
@@ -64,18 +65,24 @@ fun FeedScreen(userId: String) {
         feedViewModel.fetchNewestPosts()
         feedViewModel.fetchUserLikedAPost()
     }
-    ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel)
+    ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenHeightDp = configuration.screenHeightDp
+    val maxFeedHeight = screenHeightDp - navBarHeight
+    // Display a vertical list of images, filling the available space
+    LazyColumn(
+        modifier = Modifier.fillMaxHeight().heightIn(max = maxFeedHeight.dp)
+    ) {
+        itemsIndexed(posts) {index, post ->
+            val isLastItem = index == posts.size - 1
 
-    // Display a vertical list of images.
-    LazyColumn {
-        items(posts) { post ->
             // For each image, create an Image composable
             val isLiked = userLikedPosts.contains(post.postId)
             var applyColorFilter by remember { mutableStateOf(isLiked) }
@@ -146,7 +153,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
 
                             }
                         )
-                        Text(text = "likes", modifier = Modifier.padding(start = 8.dp))
+                        Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
                         Spacer(modifier = Modifier.width(8.dp))
 
@@ -182,6 +189,9 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                         }
                     }
                 }
+            }
+            if (isLastItem) {
+                Spacer(modifier = Modifier.padding(bottom = 65.dp))
             }
         }
     }
