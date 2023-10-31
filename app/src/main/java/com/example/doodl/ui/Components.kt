@@ -322,7 +322,6 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
             value = text,
             onValueChange = { onTextChanged(it) },
             textStyle = TextStyle(
-                color = Color.White,
                 fontSize = 16.sp
             ),
             keyboardOptions = KeyboardOptions.Default.copy(
