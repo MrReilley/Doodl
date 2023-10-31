@@ -40,7 +40,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
 
 
-    var userName = MutableLiveData<String?>()
+    var userName = MutableLiveData<String>()
     var userBio = MutableLiveData<String?>()
     var profilePic = MutableLiveData<Bitmap?>()
 
