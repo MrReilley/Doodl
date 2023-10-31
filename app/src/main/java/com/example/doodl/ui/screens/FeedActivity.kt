@@ -101,7 +101,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                     // feed card layout
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RoundImageCard(
-                            image = R.drawable.likeicon,
+                            image = R.drawable.profpic8,// needs replacing for user's pp
                             Modifier
                                 .size(48.dp)
                                 .padding(4.dp)
@@ -154,9 +154,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                             }
                         )
                         Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
-
                         Spacer(modifier = Modifier.width(8.dp))
-
                         /*Image(
                             painter = painterResource(id = R.drawable.downloadicon),
                             contentDescription = "Download",
