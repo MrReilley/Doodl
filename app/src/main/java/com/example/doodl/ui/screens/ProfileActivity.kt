@@ -94,7 +94,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
-    var userName = feedViewModel.userName.observeAsState(initial = "").value
+    var userName = feedViewModel.userName.observeAsState(null).value
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
@@ -129,28 +129,32 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 }*/
                 val maxUsernameLength = 15
 
-                Text(
-                    text = userName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 30.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    color = Color.White
-                )
+                userName?.let {
+                    Text(
+                        text = it,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                }
                 //Spacer(modifier = Modifier.weight(0.05f))
                 Spacer(modifier = Modifier.width(155.dp))
-                EditPopup(
-                    userName,
-                    userBioText,
-                    profileImage,
-                    selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
-                    onTextUpdated = { newUsername, newDescription, newProfilePicture ->
-                        userName = newUsername
-                        userBioText = newDescription
-                        profileImage = newProfilePicture
-                    },
-                    onNameUpdated = onNameUpdated // Pass the lambda function
-                )
+                userName?.let {
+                    EditPopup(
+                        it,
+                        userBioText,
+                        profileImage,
+                        selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
+                        onTextUpdated = { newUsername, newDescription, newProfilePicture ->
+                            userName = newUsername
+                            userBioText = newDescription
+                            profileImage = newProfilePicture
+                        },
+                        onNameUpdated = onNameUpdated // Pass the lambda function
+                    )
+                }
                 //Spacer(modifier = Modifier.weight(0.002f))
                 Spacer(modifier = Modifier.width(15.dp))
                 Icon(
