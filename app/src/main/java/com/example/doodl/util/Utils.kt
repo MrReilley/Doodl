@@ -15,19 +15,23 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
                                     paths: MutableList<Triple<List<Offset>, Color, Float>>,
                                     selectedColor: Color,
                                     brushSize: Float): Boolean {
-    val action = event.action
-    val offset = Offset(event.x, event.y)
+    val touchAction = event.action
+    val touchActionCoordinates = Offset(event.x, event.y)
 
     // Handles touch events for drawing paths
     // Path is a sequence of connected points represented by a list of Offsets (coordinates)
-    return when (action) {
+    return when (touchAction) {
         // If starting to draw or drawing, add to current path
         MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-            currentPath.add(offset)
+            currentPath.add(touchActionCoordinates)
             true
         }
         // If touch is released, add current path to completed paths
         MotionEvent.ACTION_UP -> {
+            if (currentPath.size == 1) {
+                // If it's a single point (a dot), duplicate the point to make it a "path"
+                currentPath.add(Offset(event.x + 1e-5f, event.y + 1e-5f)) // tiny offset to make it a line
+            }
             paths.add(Triple(currentPath.toList(), selectedColor, brushSize))
             currentPath.clear()
             true
