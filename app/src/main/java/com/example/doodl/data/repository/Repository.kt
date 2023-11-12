@@ -1,6 +1,5 @@
 package com.example.doodl.data.repository
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.net.Uri
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
@@ -30,25 +29,43 @@ class Repository {
         // Upload byte array to Firebase Storage reference
         return fileRef.putBytes(byteArray)
     }
-
-    fun downloadImage(imagePath: String): Task<Bitmap> {
-        // Get a reference to the image file at the specified path in Firebase Storage
-        val imageRef = storageReference.child(imagePath)
-        // Define a maximum size for the image to be downloaded (5MB here)
-        val maxSize: Long = 1024 * 1024 * 5
-        // Request the byte data of the image and, once it's available, process it
-        return imageRef.getBytes(maxSize).continueWith { task ->
-            // Check if task is unsuccessful and throw an exception if it is
+    fun uploadProfileImage(userId: String, imageByteArray: ByteArray): Task<Uri> {
+        val fileRef = storageReference.child("user/$userId/profilepic/${System.currentTimeMillis()}.png")
+        return fileRef.putBytes(imageByteArray).continueWithTask { task ->
             if (!task.isSuccessful) {
-                throw task.exception ?: Exception("Unknown error")
+                throw task.exception ?: Exception("Failed to upload profile image")
             }
-            // Convert the fetched byte data into a Bitmap
-            val bytes = task.result
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            bitmap// Return the constructed Bitmap
+            fileRef.downloadUrl
         }
-    }
-    fun fetchUsername(userId: String): Task<String?> {
+    }//new for profileactivity
+
+    fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String): Task<Void> {
+        val userDocumentRef = db.collection("users").document(userId)
+        return userDocumentRef.update(mapOf(
+            "username" to newUsername,
+            "userBio" to newBio,
+            "profilePicPath" to newProfilePicPath
+        ))
+    }//new for profileactivity
+
+    fun updateUserPostsUsername(userId: String, newUsername: String, newProfilePicPath: String): Task<Void> {
+        // This is a simple single document update might need to make this more efficient
+        val postsQuery = db.collection("posts").whereEqualTo("userId", userId)
+        return postsQuery.get().continueWithTask { task ->
+            if (!task.isSuccessful) {
+                throw task.exception ?: Exception("Failed to fetch user posts")
+            }
+            val batch = db.batch()
+            for (document in task.result!!) {
+                val postRef = document.reference
+                batch.update(postRef, "username", newUsername)
+                batch.update(postRef, "profilePicPath", newProfilePicPath)
+            }
+            batch.commit()
+        }
+    }//new for profileactivity
+
+    fun getUsername(userId: String): Task<String?> {
         return db.collection("users").document(userId).get().continueWith { task ->
             if (task.isSuccessful) {
                 return@continueWith task.result?.getString("username")
@@ -58,7 +75,7 @@ class Repository {
         }
     }
 
-    fun fetchUserImages(userId: String, onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
+    fun getUserImages(userId: String, onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
         // Reference to the logged-in user's images directory in Firebase storage
         val userImagesRef = storageReference.child("user/$userId/posts")
 
@@ -76,14 +93,26 @@ class Repository {
         return db.collection("users").document(userId).get()
     }
 
-    fun updateUserDetails(userId: String, username: String, userBio: String): Task<Void> {
-        val userDocument = db.collection("users").document(userId)
-        // Using a map to specify only the fields you want to update
-        val updates = hashMapOf(
-            "username" to username,
-            "userBio" to userBio
-        )
-        return userDocument.update(updates as Map<String, Any>)
+    fun getProfilePicUrl(profilePicPath: String): Task<String> {
+        val fileRef = storageReference.child(profilePicPath)
+
+        return fileRef.downloadUrl.continueWith { task ->
+            if (task.isSuccessful) {
+                task.result?.toString() ?: ""
+            } else {
+                throw task.exception ?: RuntimeException("Error fetching profile pic URL")
+            }
+        }
+    }
+    fun getProfilePicPath(userId: String): Task<String?> {
+        return db.collection("users").document(userId).get()
+            .continueWith { task ->
+                if (task.isSuccessful) {
+                    task.result?.getString("profilePicPath")
+                } else {
+                    throw task.exception ?: RuntimeException("Error fetching profile pic path")
+                }
+            }
     }
 
     fun savePostToFirestore(post: Post): Task<Void> {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -47,6 +48,7 @@ import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
@@ -100,25 +102,38 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 ) {
                     // feed card layout
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RoundImageCard(
-                            image = R.drawable.profpic8,// needs replacing for user's pp
+                        RoundImageCardFeed(
+                            url = post.profilePicUrl ?: "", // Pass the profilePicUrl here
                             Modifier
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
                         Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
                     }
-                    Image(
-                        // Convert Bitmap to a format Image composable understands and renders it
-                        painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
-                        contentDescription = null,
-                        // Style modifiers to control the layout and appearance of the image
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.68f)
-                            .padding(8.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (!post.imageUrl.isNullOrEmpty()) {
+                        Image(
+                            // Convert Bitmap to a format Image composable understands and renders it
+                            painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
+                            contentDescription = null,
+                            // Style modifiers to control the layout and appearance of the image
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.68f)
+                                .padding(8.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Display alternative content for empty imageUrl
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.68f)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No Image Available", color = Color.Black)
+                        }
+                    }
                     Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = R.drawable.likeicon),

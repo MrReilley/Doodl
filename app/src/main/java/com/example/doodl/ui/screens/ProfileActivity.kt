@@ -55,6 +55,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -402,14 +403,29 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                         .aspectRatio(1f)
                         .padding(8.dp)
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = post.imageUrl),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .scale(1.1f) // Apply the scaling factor to individual images
-                    )
+                    if (!post.imageUrl.isNullOrEmpty()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = post.imageUrl),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .scale(1.1f) // Apply the scaling factor to individual images
+                        )
+                    } else {
+                        // Display alternative content for empty imageUrl
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .scale(1.1f)
+                                .aspectRatio(1f)
+                                .background(color = Color.DarkGray),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("No Image Available", color = Color.LightGray, textAlign = TextAlign.Center)
+                        }
+                    }
                 }
                 if (isLastRow) {
                     Spacer(modifier = Modifier.padding(bottom = 195.dp))
@@ -419,3 +435,17 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun ProfileLikedPostsPreview() {
+    // Mock data for preview
+    val mockPosts = listOf(
+        Post("https://example.com/image1.jpg"),
+        Post("https://example.com/image2.jpg"),
+        Post("https://example.com/image3.jpg"),
+        Post("https://example.com/image4.jpg"),
+        // We can add more here
+    )
+
+    ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
+}

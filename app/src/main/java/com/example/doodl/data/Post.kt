@@ -9,5 +9,7 @@ data class Post(
     val likes: Int = 0,
     val likedBy: List<String> = listOf(),
     val tags: List<String> = listOf(),
-    var imageUrl: String? = null
+    var imageUrl: String? = null,
+    val profilePicPath: String? = null,
+    var profilePicUrl: String? = null
 )
