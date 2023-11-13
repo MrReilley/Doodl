@@ -68,22 +68,36 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     }
 
     fun fetchUserDetails(userId: String) {
-        repository.getUserDetails(userId).addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                userName.value = document.getString("username") ?: "Anonymous"
-                userBio.value = document.getString("userBio")
+        viewModelScope.launch {
+            try {
+                val document = repository.getUserDetails(userId).await()
+                if (document.exists()) {
+                    userName.value = document.getString("username") ?: "Anonymous"
+                    userBio.value = document.getString("userBio")
 
-                val profilePicPath = document.getString("profilePicPath")
-                profilePic.value = profilePicPath  // Directly store the URL
-            } else {
-                // Handles the case where the document doesn't exist.
+                    val profilePicPath = document.getString("profilePicPath")
+                    if (!profilePicPath.isNullOrEmpty()) {
+                        try {
+                            // Fetch URL from the path
+                            val profilePicUrl = repository.getProfilePicUrl(profilePicPath).await()
+                            profilePic.value = profilePicUrl // Store the URL
+                        } catch (exception: Exception) {
+                            Log.e("FeedViewModel", "Profile picture URL fetch failed: ${exception.message}")
+                            profilePic.value = null // Set to null if fetching URL fails
+                        }
+                    } else {
+                        profilePic.value = null
+                    }
+                } else {
+                    // Handle the case where the document doesn't exist.
+                    profilePic.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error fetching user details: ${e.message}")
                 profilePic.value = null
             }
-        }.addOnFailureListener {
-            // Handle any errors here.
-            Log.e("FeedViewModel", "Error fetching user details: ${it.message}")
         }
-    }
+    }//modified for profile showing profile pic
 
     fun fetchNewestPosts() {
         viewModelScope.launch {
@@ -246,6 +260,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }//new
+
 }
 
 

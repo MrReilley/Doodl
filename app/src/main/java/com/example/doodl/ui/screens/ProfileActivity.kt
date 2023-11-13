@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -96,9 +98,10 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
     var userName = feedViewModel.userName.observeAsState(null).value
-    val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
+    //val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+    val profilePicUrl by feedViewModel.profilePic.observeAsState()
 
     val onNameUpdated: (String) -> Unit = { newName ->
         userName = newName
@@ -172,12 +175,21 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             }
             Spacer(modifier = Modifier.width(25.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RoundImageCard(
-                    image = profileImage,
-                    Modifier
-                        .size(115.dp)
-                        .padding(5.dp)
-                )
+                if (profilePicUrl != null) {//new
+                    Image(
+                        painter = rememberAsyncImagePainter(model = profilePicUrl),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .size(115.dp)
+                            .padding(5.dp)
+                    )
+                } else {
+                    // Will show a default image of our choosing
+                    RoundImageCard(
+                        image = R.drawable.profpic8, // Default or placeholder image
+                        Modifier.size(115.dp).padding(5.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = userBioText ?: "No bio available.",
@@ -432,6 +444,17 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 }
             }
         }
+    }
+}
+@Composable
+fun ProfileImage(url: String, modifier: Modifier) {
+    Card(shape = CircleShape, modifier = modifier) {
+        Image(
+            painter = rememberAsyncImagePainter(model = url),
+            contentDescription = "Profile Picture",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
