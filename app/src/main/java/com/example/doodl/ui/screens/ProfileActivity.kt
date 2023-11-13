@@ -1,6 +1,9 @@
 package com.example.doodl.ui.screens
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,20 +19,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -39,7 +38,6 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -62,20 +60,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
-import com.example.doodl.data.User
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.EditableTextField
-import com.example.doodl.ui.ProfilePictureItem
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 
-private var lastUserProfile = mutableStateOf(User(R.drawable.profpic8, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -90,21 +84,23 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
         feedViewModel.fetchUserDetails(userId)
         feedViewModel.fetchLikedPosts()
     }
-    var profileImage by remember { mutableIntStateOf(lastUserProfile.value.profileImageResource) }
-    //var userName by remember { mutableStateOf(lastUserProfile.value.username) }
-    //var userBioText by remember { mutableStateOf(lastUserProfile.value.description) }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
     var userName = feedViewModel.userName.observeAsState(null).value
-    //val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
     val profilePicUrl by feedViewModel.profilePic.observeAsState()
 
-    val onNameUpdated: (String) -> Unit = { newName ->
-        userName = newName
+    // Prepare the launcher for picking an image
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Handle the image URI - upload to Firebase and update the profile
+            // This will need to be implemented
+        }
     }
 
     Column(
@@ -146,17 +142,14 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 //Spacer(modifier = Modifier.weight(0.05f))
                 Spacer(modifier = Modifier.width(155.dp))
                 userName?.let {
-                    EditPopup(
-                        it,
-                        userBioText,
-                        profileImage,
-                        selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
-                        onTextUpdated = { newUsername, newDescription, newProfilePicture ->
-                            userName = newUsername
-                            userBioText = newDescription
-                            profileImage = newProfilePicture
-                        },
-                        onNameUpdated = onNameUpdated // Pass the lambda function
+                    ProfileEditPopup(
+                        currentUsername = feedViewModel.userName.value,
+                        currentBio = feedViewModel.userBio.value,
+                        onImageSelected = { pickImageLauncher.launch("image/*") },
+                        onConfirm = { newUsername, newBio ->
+                            // Handle the profile update here
+                            // You might need to pass the image as ByteArray
+                        }
                     )
                 }
                 //Spacer(modifier = Modifier.weight(0.002f))
@@ -253,103 +246,68 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun EditPopup(
-    oldUsername: String,
-    oldDescription: String?,
-    oldImageResource: Int,
-    selectedProfilePicture: MutableState<Int>,
-    onTextUpdated: (newUsername: String, newDescription: String?, newImageResource: Int) -> Unit,
-    onNameUpdated: (newName: String) -> Unit // Add a new callback for name update
+fun ProfileEditPopup(
+    currentUsername: String?,
+    currentBio: String?,
+    onImageSelected: () -> Unit, // Callback when the image icon is clicked
+    onConfirm: (String, String) -> Unit // Callback when the save button is clicked
 ) {
-    var isEditable by remember { mutableStateOf(false) }
-    var editedName by remember { mutableStateOf(oldUsername) } // Use editedName
-    var description: String? by remember { mutableStateOf(oldDescription) }
-    var profilePicture by remember { mutableIntStateOf(oldImageResource) }
-    val profilePictures = listOf(
-        R.drawable.profpic1,
-        R.drawable.profpic2,
-        R.drawable.profpic3,
-        R.drawable.profpic8,
-        R.drawable.profpic4,
-        R.drawable.profpic5,
-        R.drawable.profpic6,
-        R.drawable.profpic7,
-        R.drawable.profpic9,
-        R.drawable.profpic10
+    var isPopupVisible by remember { mutableStateOf(false) }
+    var newUsername by remember { mutableStateOf(currentUsername ?: "") }
+    var newBio by remember { mutableStateOf(currentBio ?: "") }
+
+    // Icon to open the popup
+    Icon(
+        imageVector = Icons.Default.Edit,
+        tint = MaterialTheme.colorScheme.primary,
+        contentDescription = "Edit Profile",
+        modifier = Modifier.clickable { isPopupVisible = true }
     )
 
-    Column {
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .clickable {
-                    isEditable = true
+    // The actual popup
+    if (isPopupVisible) {
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { isPopupVisible = false },
+            title = { Text("Edit Your Profile") },
+            text = {
+                Column {
+                    Text(text = "Set your profile picture", color = Color.White)
+                    // Icon for picking an image
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = "Change Profile Picture",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable { onImageSelected() }
+                            .padding(16.dp)
+                            .size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField(
+                        label = "Username",
+                        text = newUsername,
+                        onTextChanged = { newUsername = it }
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField(
+                        label = "Biography",
+                        text = newBio,
+                        onTextChanged = { newBio = it }
+                    )
                 }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isPopupVisible = false
+                        onConfirm(newUsername, newBio)
+                    }
+                ) { Text("Save", color = Color.White) }
+            }
         )
-
-        if (isEditable) {
-            AlertDialog(
-                containerColor = Color.Black,
-                modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
-                onDismissRequest = {
-                    isEditable = false
-                },
-                title = {
-                    Text("Edit your profile", color = Color.White)
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            isEditable = false
-                            // Pass the editedName to the onNameUpdated callback
-                            onNameUpdated(editedName)
-                            onTextUpdated(editedName, description, profilePicture)
-                            val updatedUserProfile = User(profilePicture, editedName, description)
-                            lastUserProfile.value = updatedUserProfile
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text("Save", color = Color.Black)
-                    }
-                },
-                text = {
-                    Column {
-                        Text(text = "Set your profile picture", color = Color.White)
-                        // List of selectable profile pictures
-                        LazyRow {
-                            items(profilePictures) { imageResource ->
-                                ProfilePictureItem(
-                                    imageResource = imageResource,
-                                    isSelected = imageResource == selectedProfilePicture.value,
-                                    onProfilePictureSelected = {
-                                        selectedProfilePicture.value = imageResource
-                                        profilePicture = imageResource
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        // Use editedName for the name input field
-                        EditableTextField("Username", editedName) { newText ->
-                            editedName = newText // Update the editedName
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        var nDescription: String = description ?: ""
-                        EditableTextField("Description", nDescription) { newText ->
-                            nDescription = newText
-                            description = nDescription
-                        }
-                    }
-                }
-            )
-        }
     }
 }
 
@@ -444,17 +402,6 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 }
             }
         }
-    }
-}
-@Composable
-fun ProfileImage(url: String, modifier: Modifier) {
-    Card(shape = CircleShape, modifier = modifier) {
-        Image(
-            painter = rememberAsyncImagePainter(model = url),
-            contentDescription = "Profile Picture",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
     }
 }
 
