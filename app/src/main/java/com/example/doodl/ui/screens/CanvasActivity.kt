@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -31,10 +33,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.Scaffold
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -63,6 +69,7 @@ import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import androidx.compose.runtime.remember
 
 // Composable functions for UI of each screen
 @Composable
@@ -321,20 +328,27 @@ fun PostInfoScreen(
     val bitmap = canvasViewModel.currentBitmap.value
     val context = LocalContext.current
     val selectedTags = remember { mutableStateListOf<String>() }
-    val tagOptions = listOf(
-        "Abstract",
-        "Animal",
-        "Anime",
-        "Cute",
-        "Dramatic",
-        "Funny",
-        "Scary",
-        "Landscape",
-        "Mysterious",
-        "Nostalgic",
-        "Realism",
-        "Surreal"
-    )
+    val showTextField = remember { mutableStateOf(false) }
+    val customTag = remember { mutableStateOf("") }
+    val tagOptions = remember { mutableStateListOf<String>() }
+
+    if (tagOptions.isEmpty()) {
+        tagOptions.addAll(listOf(
+            "Abstract",
+            "Animal",
+            "Anime",
+            "Cute",
+            "Dramatic",
+            "Funny",
+            "Scary",
+            "Landscape",
+            "Mysterious",
+            "Nostalgic",
+            "Realism",
+            "Surreal"
+        ))
+    }
+
     var isUploading by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -377,10 +391,15 @@ fun PostInfoScreen(
             }
 
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CustomTagEntry(tagOptions = tagOptions, customTag = customTag, selectedTags = selectedTags, showTextField = showTextField)
+                Spacer(modifier = Modifier.height(16.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -420,6 +439,7 @@ fun PostInfoScreen(
                         Text("Share", color = Color.White)
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -427,12 +447,14 @@ fun PostInfoScreen(
 
 @Composable
 fun TagButton(tag: String, selectedTags: MutableList<String>) {
-    val isSelected = remember { mutableStateOf(false) }
+    val isSelected = remember { mutableStateOf(tag in selectedTags) }
     Button(
         onClick = {
             isSelected.value = !isSelected.value
             if (isSelected.value) {
-                selectedTags.add(tag)
+                if (tag !in selectedTags) {
+                    selectedTags.add(tag)
+                }
             } else {
                 selectedTags.remove(tag)
             }
@@ -445,3 +467,63 @@ fun TagButton(tag: String, selectedTags: MutableList<String>) {
         Text(tag, color = if(isSelected.value) Color.Black else Color.White)
     }
 }
+
+@Composable
+fun CustomTagEntry(
+    tagOptions: SnapshotStateList<String>,
+    customTag: MutableState<String>,
+    selectedTags: SnapshotStateList<String>,
+    showTextField: MutableState<Boolean>
+) {
+    val allowedCharsPattern = "^[a-zA-Z0-9]*$".toRegex()
+    val maxLength = 16
+    val context = LocalContext.current
+
+    if (showTextField.value) {
+        Row(verticalAlignment = Alignment.CenterVertically)
+        {
+            TextField(
+                value = customTag.value,
+                onValueChange = { newValue ->
+                    when {
+                        newValue.length > maxLength -> {
+                            Toast.makeText(context, "Tags can only be up to 16 characters", Toast.LENGTH_SHORT).show()
+                        }
+                        !newValue.matches(allowedCharsPattern) -> {
+                            Toast.makeText(context, "Input contains invalid characters", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            customTag.value = newValue
+                        }
+                    }
+                },
+                label = { Text("Add Custom Tag") },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary
+                )
+            )
+            Button(
+                onClick = {
+                    if (customTag.value.isNotBlank() && customTag.value !in tagOptions) {
+                        tagOptions += customTag.value
+                        selectedTags.add(customTag.value)
+                        customTag.value = ""
+                        showTextField.value = false
+                    }
+                }
+            ) {
+                Text("Add", color = Color.White)
+            }
+        }
+    } else {
+        Button(onClick = {
+            showTextField.value = true
+        }) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Custom Tag", tint = Color.White)
+        }
+    }
+}
+
