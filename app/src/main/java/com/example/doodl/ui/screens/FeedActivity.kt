@@ -47,7 +47,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -68,6 +67,7 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
         feedViewModel.fetchUserLikedAPost()
     }
     ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
+
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -80,7 +80,9 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
     val maxFeedHeight = screenHeightDp - navBarHeight
     // Display a vertical list of images, filling the available space
     LazyColumn(
-        modifier = Modifier.fillMaxHeight().heightIn(max = maxFeedHeight.dp)
+        modifier = Modifier
+            .fillMaxHeight()
+            .heightIn(max = maxFeedHeight.dp)
     ) {
         itemsIndexed(posts) {index, post ->
             val isLastItem = index == posts.size - 1
@@ -101,14 +103,18 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                         .background(Color.White)
                 ) {
                     // feed card layout
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row {//the parameters are making it crash
                         RoundImageCardFeed(
                             url = post.profilePicUrl ?: "", // Pass the profilePicUrl here
                             Modifier
                                 .size(48.dp)
                                 .padding(4.dp)
                         )
-                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
+                        Text(
+                            text = post.username ?: "Anonymous",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            modifier = Modifier.padding(8.dp))
                     }
                     if (!post.imageUrl.isNullOrEmpty()) {
                         Image(
