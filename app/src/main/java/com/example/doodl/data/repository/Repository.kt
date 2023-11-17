@@ -176,7 +176,19 @@ class Repository {
                 }
             }
     }
-
+    fun isUsernameAvailable(username: String): Task<Boolean> {
+        return db.collection("users")
+            .whereEqualTo("username", username)
+            .limit(1) // Limit to checking just one document
+            .get()
+            .continueWith { task ->
+                if (!task.isSuccessful) {
+                    throw task.exception ?: Exception("Failed to check username availability")
+                }
+                val querySnapshot = task.result
+                querySnapshot?.isEmpty ?: true // Username is available if no documents are found
+            }
+    }
 
 }
 

@@ -1,6 +1,7 @@
 package com.example.doodl.ui.screens
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -68,9 +70,10 @@ import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
+import com.example.doodl.util.ComposableStateUtil
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
-
+import com.example.doodl.util.ValidationUtils
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -106,7 +109,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             inputStream?.close()
 
             byteArray?.let { imageBytes ->
-                // Now you have the image as ByteArray, update the profile
+                // We have the image as a ByteArray, update the profile
                 feedViewModel.updateProfile(
                     newUsername = userName ?: "", // Use the current username as default
                     newBio = userBioText ?: "", // Use the current bio as default
@@ -114,7 +117,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 )
             }
         }?: run {
-            // User did not select an image. You can handle this case if needed.
             // No image was selected, call updateProfile with null for imageByteArray
             feedViewModel.updateProfile(
                 newUsername = userName ?: "",
@@ -135,21 +137,11 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 // feed card layout
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "")
                 Spacer(modifier = Modifier.width(15.dp))
-                /*
-                if (userName.length >= 14) {
-                    Spacer(modifier = Modifier.width(110.dp))
-                }else if(userName.length >= 20){
-                    Spacer(modifier = Modifier.width(90.dp))
-                }
-                else{
-                    Spacer(modifier = Modifier.width(140.dp))
-                }*/
-                val maxUsernameLength = 15
-
                 userName?.let {
                     Text(
                         text = it,
@@ -160,8 +152,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         color = Color.White
                     )
                 }
-                //Spacer(modifier = Modifier.weight(0.05f))
-                Spacer(modifier = Modifier.width(155.dp))
+                //Spacer(modifier = Modifier.width(155.dp))
+                Spacer(modifier = Modifier.weight(1f)) // Flexible spacer to push content to sides
                 userName?.let {
                     ProfileEditPopup(
                         currentUsername = feedViewModel.userName.value,
@@ -175,7 +167,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                                 newBio = newBio,
                                 imageByteArray = null // Pass an empty array for image
                             )
-                        }
+                        },
+                        viewModel = feedViewModel
                     )
                 }
                 //Spacer(modifier = Modifier.weight(0.002f))
@@ -203,7 +196,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                             .padding(5.dp)
                     )
                 } else {
-                    // Will show a default image of our choosing
+                    // We can show a default image here
                     RoundImageCard(
                         image = R.drawable.profpic8, // Default or placeholder image
                         Modifier.size(115.dp).padding(5.dp)
@@ -277,18 +270,28 @@ fun ProfileEditPopup(
     currentUsername: String?,
     currentBio: String?,
     onImageSelected: () -> Unit, // Callback when the image icon is clicked
-    onConfirm: (String, String) -> Unit // Callback when the save button is clicked
+    onConfirm: (String, String) -> Unit, // Callback when the save button is clicked
+    viewModel: FeedViewModel
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
     var newUsername by remember { mutableStateOf(currentUsername ?: "") }
     var newBio by remember { mutableStateOf(currentBio ?: "") }
+    val context = LocalContext.current // Get the local context
 
     // Icon to open the popup
     Icon(
         imageVector = Icons.Default.Edit,
         tint = MaterialTheme.colorScheme.primary,
         contentDescription = "Edit Profile",
-        modifier = Modifier.clickable { isPopupVisible = true }
+        modifier = Modifier.clickable {
+            ComposableStateUtil.resetEditableFields(
+                currentUsername = currentUsername,
+                currentBio = currentBio,
+                onUsernameReset = { newUsername = it },
+                onBioReset = { newBio = it }
+            )
+            isPopupVisible = true
+        }
     )
 
     // The actual popup
@@ -328,8 +331,26 @@ fun ProfileEditPopup(
             confirmButton = {
                 Button(
                     onClick = {
-                        isPopupVisible = false
-                        onConfirm(newUsername, newBio)
+                        val (isUsernameValid, usernameMessage) = ValidationUtils.validateUsername(newUsername)
+                        val (isBioValid, bioMessage) = ValidationUtils.validateBio(newBio)
+                        if (!isUsernameValid) {
+                            Toast.makeText(context, usernameMessage, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        if (!isBioValid) {
+                            Toast.makeText(context, bioMessage, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        viewModel.checkUsernameAvailability(newUsername) { isAvailable ->
+                            if (!isAvailable && newUsername != currentUsername) {
+                                Toast.makeText(context, "Username already taken", Toast.LENGTH_SHORT).show()
+                            } else {
+                                isPopupVisible = false
+                                onConfirm(newUsername, newBio)
+                            }
+                        }
                     }
                 ) { Text("Save", color = Color.White) }
             }

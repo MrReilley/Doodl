@@ -278,8 +278,19 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 // Handle error
             }
         }
-    }
-    //new
+    } //new
+    fun checkUsernameAvailability(username: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val isAvailable = repository.isUsernameAvailable(username).await()
+                onResult(isAvailable)
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error checking username availability: ${exception.message}")
+                onResult(false) // Assume unavailable on error
+            }
+        }
+    }//new
+
 
 }
 
