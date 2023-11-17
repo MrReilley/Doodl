@@ -241,25 +241,45 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }
     }
 
-    fun updateProfile(newUsername: String, newBio: String, imageByteArray: ByteArray) {
+    fun updateProfile(newUsername: String, newBio: String, imageByteArray: ByteArray?) {
         viewModelScope.launch {
             try {
-                val downloadUri = repository.uploadProfileImage(userId, imageByteArray).await()
-                repository.updateUserProfile(userId, newUsername, newBio, downloadUri.toString()).await()
-                repository.updateUserPostsUsername(userId, newUsername, downloadUri.toString()).await()
+                val updateProfilePic = imageByteArray != null
+                val newProfilePicUrl = if (updateProfilePic) {
+                    // Upload new image and get the URL
+                    repository.uploadProfileImage(userId, imageByteArray!!).await().toString()
+                } else {
+                    // Keep the current profile picture URL
+                    profilePic.value ?: ""
+                }
 
-                // Update LiveData with the new data
+                // Update user's profile in Firestore
+                repository.updateUserProfile(userId, newUsername, newBio, if (updateProfilePic) newProfilePicUrl else null).await()
+
+                // Update user's posts with new username and optionally new profile picture URL
+                if (updateProfilePic) {
+                    // Update both username and profile picture URL in posts
+                    repository.updateUserPostsUsername(userId, newUsername, newProfilePicUrl).await()
+                } else {
+                    // Update only the username in posts
+                    repository.updateUserPostsUsername(userId, newUsername, null).await()
+                }
+
+                // Update LiveData
                 userName.value = newUsername
                 userBio.value = newBio
-                profilePic.value = downloadUri.toString()  // Store the URL
+                if (updateProfilePic) {
+                    profilePic.value = newProfilePicUrl
+                }
 
-                // Notify the user or the UI that the update was successful
+                // Notify UI of successful update
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error updating user information: ${exception.message}")
-                // Notify the user or the UI that there was an error
+                // Handle error
             }
         }
-    }//new
+    }
+    //new
 
 }
 

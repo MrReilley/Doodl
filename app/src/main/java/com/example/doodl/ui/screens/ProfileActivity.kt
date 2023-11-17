@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -92,6 +93,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
     val profilePicUrl by feedViewModel.profilePic.observeAsState()
+    val context = LocalContext.current //For updating profile pic
 
     // Prepare the launcher for picking an image
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -99,7 +101,26 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     ) { uri: Uri? ->
         uri?.let {
             // Handle the image URI - upload to Firebase and update the profile
-            // This will need to be implemented
+            val inputStream = context.contentResolver.openInputStream(it)
+            val byteArray = inputStream?.readBytes()
+            inputStream?.close()
+
+            byteArray?.let { imageBytes ->
+                // Now you have the image as ByteArray, update the profile
+                feedViewModel.updateProfile(
+                    newUsername = userName ?: "", // Use the current username as default
+                    newBio = userBioText ?: "", // Use the current bio as default
+                    imageByteArray = imageBytes
+                )
+            }
+        }?: run {
+            // User did not select an image. You can handle this case if needed.
+            // No image was selected, call updateProfile with null for imageByteArray
+            feedViewModel.updateProfile(
+                newUsername = userName ?: "",
+                newBio = userBioText ?: "",
+                imageByteArray = null
+            )
         }
     }
 
@@ -148,7 +169,12 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         onImageSelected = { pickImageLauncher.launch("image/*") },
                         onConfirm = { newUsername, newBio ->
                             // Handle the profile update here
-                            // You might need to pass the image as ByteArray
+                            // Only update username and bio, image is handled separately
+                            feedViewModel.updateProfile(
+                                newUsername = newUsername,
+                                newBio = newBio,
+                                imageByteArray = null // Pass an empty array for image
+                            )
                         }
                     )
                 }

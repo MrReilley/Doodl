@@ -39,17 +39,17 @@ class Repository {
         }
     }//new for profileactivity
 
-    fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String): Task<Void> {
+    fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String?): Task<Void> {
         val userDocumentRef = db.collection("users").document(userId)
-        return userDocumentRef.update(mapOf(
+        val updates = hashMapOf<String, Any>(
             "username" to newUsername,
-            "userBio" to newBio,
-            "profilePicPath" to newProfilePicPath
-        ))
+            "userBio" to newBio
+        )
+        newProfilePicPath?.let { updates["profilePicPath"] = it }
+        return userDocumentRef.update(updates)
     }//new for profileactivity
 
-    fun updateUserPostsUsername(userId: String, newUsername: String, newProfilePicPath: String): Task<Void> {
-        // This is a simple single document update might need to make this more efficient
+    fun updateUserPostsUsername(userId: String, newUsername: String, newProfilePicPath: String?): Task<Void> {
         val postsQuery = db.collection("posts").whereEqualTo("userId", userId)
         return postsQuery.get().continueWithTask { task ->
             if (!task.isSuccessful) {
@@ -59,7 +59,7 @@ class Repository {
             for (document in task.result!!) {
                 val postRef = document.reference
                 batch.update(postRef, "username", newUsername)
-                batch.update(postRef, "profilePicPath", newProfilePicPath)
+                newProfilePicPath?.let { batch.update(postRef, "profilePicPath", it) }
             }
             batch.commit()
         }
