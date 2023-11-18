@@ -92,8 +92,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
 
-    var userName = feedViewModel.userName.observeAsState(null).value
-    var userBioText = feedViewModel.userBio.observeAsState(null).value
+    val userName = feedViewModel.userName.observeAsState(null).value
+    val userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
     val profilePicUrl by feedViewModel.profilePic.observeAsState()
     val context = LocalContext.current //For updating profile pic
@@ -349,6 +349,7 @@ fun ProfileEditPopup(
                             } else {
                                 isPopupVisible = false
                                 onConfirm(newUsername, newBio)
+                                Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }

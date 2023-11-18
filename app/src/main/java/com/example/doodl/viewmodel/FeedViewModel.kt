@@ -242,6 +242,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     }
 
     fun updateProfile(newUsername: String, newBio: String, imageByteArray: ByteArray?) {
+        Log.d("FeedViewModel", "Updating profile - started")
         viewModelScope.launch {
             try {
                 val updateProfilePic = imageByteArray != null
@@ -271,11 +272,10 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 if (updateProfilePic) {
                     profilePic.value = newProfilePicUrl
                 }
-
                 // Notify UI of successful update
+                Log.d("FeedViewModel", "Updating profile - success")
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error updating user information: ${exception.message}")
-                // Handle error
             }
         }
     } //new
