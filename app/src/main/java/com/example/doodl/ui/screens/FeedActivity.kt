@@ -103,7 +103,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                         .background(Color.White)
                 ) {
                     // feed card layout
-                    Row {//the parameters are making it crash
+                    Row (verticalAlignment = Alignment.CenterVertically){
                         RoundImageCardFeed(
                             url = post.profilePicUrl ?: "", // Pass the profilePicUrl here
                             Modifier
@@ -113,8 +113,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                         Text(
                             text = post.username ?: "Anonymous",
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black,
-                            modifier = Modifier.padding(8.dp))
+                            color = Color.Black)
                     }
                     if (!post.imageUrl.isNullOrEmpty()) {
                         Image(
