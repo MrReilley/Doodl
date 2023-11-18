@@ -1,8 +1,8 @@
 package com.example.doodl.data.repository
-import android.net.Uri
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -10,6 +10,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
+import kotlin.random.Random
 
 
 // Code that interacts with Firebase Storage
@@ -29,14 +30,32 @@ class Repository {
         // Upload byte array to Firebase Storage reference
         return fileRef.putBytes(byteArray)
     }
-    fun uploadProfileImage(userId: String, imageByteArray: ByteArray): Task<Uri> {
-        val fileRef = storageReference.child("user/$userId/profilepic/${System.currentTimeMillis()}.png")
-        return fileRef.putBytes(imageByteArray).continueWithTask { task ->
-            if (!task.isSuccessful) {
-                throw task.exception ?: Exception("Failed to upload profile image")
+    fun uploadProfileImage(userId: String, imageByteArray: ByteArray): Task<String> {
+        fun getRandomNumber() = Random.nextInt(1000, 9999)
+        // Create a TaskCompletionSource
+        val taskCompletionSource = TaskCompletionSource<String>()
+        // First, fetch the username
+        getUsername(userId).addOnSuccessListener { username ->
+            // Generate filename with username and random number
+            val randomNumber = getRandomNumber()
+            val fileName = "${username ?: "user"}$randomNumber.png"
+            val fileRef = storageReference.child("user/$userId/profilepic/$fileName")
+
+            // Upload the file
+            fileRef.putBytes(imageByteArray).addOnSuccessListener {
+                // On success, set the result as the file reference path
+                taskCompletionSource.setResult(fileRef.path)
+            }.addOnFailureListener { exception ->
+                // On failure, set the exception
+                taskCompletionSource.setException(exception)
             }
-            fileRef.downloadUrl
+        }.addOnFailureListener { exception ->
+            // If fetching username fails, set the exception
+            taskCompletionSource.setException(exception)
         }
+
+        // Return the Task from the TaskCompletionSource
+        return taskCompletionSource.task
     }//new for profileactivity
 
     fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String?): Task<Void> {
@@ -188,7 +207,7 @@ class Repository {
                 val querySnapshot = task.result
                 querySnapshot?.isEmpty ?: true // Username is available if no documents are found
             }
-    }
+    }//new for profileactivity
 
 }
 

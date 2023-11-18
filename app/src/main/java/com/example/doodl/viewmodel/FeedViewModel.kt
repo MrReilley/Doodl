@@ -1,11 +1,18 @@
 package com.example.doodl.viewmodel
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
@@ -13,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 
@@ -246,32 +254,31 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         viewModelScope.launch {
             try {
                 val updateProfilePic = imageByteArray != null
-                val newProfilePicUrl = if (updateProfilePic) {
-                    // Upload new image and get the URL
-                    repository.uploadProfileImage(userId, imageByteArray!!).await().toString()
+                val newProfilePicPath = if (updateProfilePic) {
+                    // Upload new image and get the storage path
+                    repository.uploadProfileImage(userId, imageByteArray!!).await()
                 } else {
-                    // Keep the current profile picture URL
+                    // Keep the current profile picture path
+                    profilePic.value ?: ""
+                }
+
+                // Fetch the download URL only if a new image has been uploaded
+                val newProfilePicUrl = if (updateProfilePic) {
+                    repository.getImageUrl(newProfilePicPath).await()
+                } else {
                     profilePic.value ?: ""
                 }
 
                 // Update user's profile in Firestore
-                repository.updateUserProfile(userId, newUsername, newBio, if (updateProfilePic) newProfilePicUrl else null).await()
+                repository.updateUserProfile(userId, newUsername, newBio, newProfilePicPath).await()
 
-                // Update user's posts with new username and optionally new profile picture URL
-                if (updateProfilePic) {
-                    // Update both username and profile picture URL in posts
-                    repository.updateUserPostsUsername(userId, newUsername, newProfilePicUrl).await()
-                } else {
-                    // Update only the username in posts
-                    repository.updateUserPostsUsername(userId, newUsername, null).await()
-                }
+                // Update user's posts with new username and new profile picture URL
+                repository.updateUserPostsUsername(userId, newUsername, newProfilePicPath).await()
 
                 // Update LiveData
                 userName.value = newUsername
                 userBio.value = newBio
-                if (updateProfilePic) {
-                    profilePic.value = newProfilePicUrl
-                }
+                profilePic.value = newProfilePicUrl
                 // Notify UI of successful update
                 Log.d("FeedViewModel", "Updating profile - success")
             } catch (exception: Exception) {
@@ -290,7 +297,39 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }//new
+    suspend fun processImage(uri: Uri, context: Context): ByteArray? {
+        return withContext(Dispatchers.IO) {
+            // Set target size for the resized image to 400x400 pixels
+            val targetSize = 400
 
+            // Use Coil to load the image as a Bitmap, resize, and compress as PNG
+            context.imageLoader.execute(ImageRequest.Builder(context)
+                .data(uri)
+                .size(targetSize)
+                .apply {
+                    // Additional logic to maintain aspect ratio and crop if necessary
+                    transformations(CircleCropTransformation())
+                }
+                .build()).drawable?.toBitmap()?.let { bitmap ->
+                // Compress the Bitmap to PNG and convert to ByteArray
+                ByteArrayOutputStream().apply {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, this)
+                }.toByteArray()
+            }
+        }
+    }
+    fun onImageSelected(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            val processedImageBytes = processImage(uri, context)
+            processedImageBytes?.let { imageBytes ->
+                updateProfile(
+                    newUsername = userName.value ?: "",
+                    newBio = userBio.value ?: "",
+                    imageByteArray = imageBytes
+                )
+            }
+        }
+    }
 
 }
 

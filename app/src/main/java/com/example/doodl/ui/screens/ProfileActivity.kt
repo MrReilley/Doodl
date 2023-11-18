@@ -102,21 +102,10 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            // Handle the image URI - upload to Firebase and update the profile
-            val inputStream = context.contentResolver.openInputStream(it)
-            val byteArray = inputStream?.readBytes()
-            inputStream?.close()
-
-            byteArray?.let { imageBytes ->
-                // We have the image as a ByteArray, update the profile
-                feedViewModel.updateProfile(
-                    newUsername = userName ?: "", // Use the current username as default
-                    newBio = userBioText ?: "", // Use the current bio as default
-                    imageByteArray = imageBytes
-                )
-            }
-        }?: run {
+        uri?.let { selectedImageUri ->
+            // Launch a coroutine to process the image and update the profile
+            feedViewModel.onImageSelected(selectedImageUri, context)
+        } ?: run {
             // No image was selected, call updateProfile with null for imageByteArray
             feedViewModel.updateProfile(
                 newUsername = userName ?: "",
