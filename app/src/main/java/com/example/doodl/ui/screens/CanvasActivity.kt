@@ -70,6 +70,7 @@ import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import androidx.compose.runtime.remember
+import java.lang.Math.round
 
 // Composable functions for UI of each screen
 @Composable
@@ -216,8 +217,15 @@ fun CanvasActivity(
             ) {
                 Slider(
                     value = brushSize,
-                    onValueChange = { brushSize = it },
-                    valueRange = 5f..100f
+                    onValueChange = { newValue ->
+                        // Calculate the step size for the entire range
+                        val stepSize = 5f
+                        // Snap the value to the nearest step, starting at 5
+                        val stepsFromStart = ((newValue - 5) / stepSize).toInt()
+                        brushSize = 5f + stepsFromStart * stepSize
+                    },
+                    valueRange = 5f..105f,
+                    steps = 20
                 )
             }
         }
