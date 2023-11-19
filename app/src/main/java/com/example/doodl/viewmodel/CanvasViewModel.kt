@@ -3,6 +3,8 @@ package com.example.doodl.viewmodel
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +24,12 @@ import java.util.UUID
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
     val currentBitmap: MutableLiveData<Bitmap?> = MutableLiveData(null)
+    var canvasPaths: MutableLiveData<MutableList<Triple<List<Offset>, Color, Float>>> = MutableLiveData(mutableListOf())
+
+    fun clearCanvasPaths() {
+        canvasPaths.value = mutableListOf()
+    }
+
     fun uploadDrawing(bitmap: Bitmap, selectedTags: List<String>, onComplete: (Boolean) -> Unit) {
         try {
             val byteArray = bitmapToByteArray(bitmap)

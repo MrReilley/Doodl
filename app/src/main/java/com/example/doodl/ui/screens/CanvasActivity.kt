@@ -39,7 +39,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -82,10 +84,20 @@ fun CanvasScreen(
         // Do nothing, effectively disabling the back button
     }
     var selectedColor by remember { mutableStateOf(Color.Black) }
-
-    CanvasActivity(navController, canvasViewModel, navBarHeight,  selectedColor) { newColor ->
-        selectedColor = newColor
+    val pathsState = canvasViewModel.canvasPaths.observeAsState()
+    val paths = remember { pathsState.value ?: mutableStateListOf() }
+    LaunchedEffect(paths) {
+        canvasViewModel.canvasPaths.value = paths
     }
+
+    CanvasActivity(
+        navController = navController,
+        canvasViewModel = canvasViewModel,
+        navBarHeight = navBarHeight,
+        selectedColor = selectedColor,
+        updateSelectedColor = { newColor -> selectedColor = newColor },
+        paths = paths
+    )
 }
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -94,9 +106,9 @@ fun CanvasActivity(
     canvasViewModel: CanvasViewModel,
     navBarHeight: Int,
     selectedColor: Color,
-    updateSelectedColor: (Color) -> Unit
+    updateSelectedColor: (Color) -> Unit,
+    paths: MutableList<Triple<List<Offset>, Color, Float>>
 ) {
-    val paths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
     var brushSize by remember { mutableFloatStateOf(5f) }
@@ -158,6 +170,13 @@ fun CanvasActivity(
                     }
                 }) {
                     Icon(painter = painterResource(id = R.drawable.redo), contentDescription = "Redo")
+                }
+                IconButton(onClick = {
+                    if (!isColorPickerVisible.value && paths.isNotEmpty()) {
+                        paths.clear()
+                    }
+                }) {
+                    Icon(Icons.Default.Delete, contentDescription = "New Canvas")
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -419,6 +438,7 @@ fun PostInfoScreen(
                                 isUploading = false
                                 if (success) {
                                     canvasViewModel.clearCurrentBitmap()
+                                    canvasViewModel.clearCanvasPaths()
                                     navController.navigate("feed")
                                     val message = "Post successful"
                                     val duration = Toast.LENGTH_SHORT
