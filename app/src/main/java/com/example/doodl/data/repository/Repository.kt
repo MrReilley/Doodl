@@ -1,8 +1,10 @@
 package com.example.doodl.data.repository
+import android.net.Uri
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -107,7 +109,21 @@ class Repository {
             onFailure(exception)
         }
     }
+    fun fetchProfileImages(userId: String): Task<List<String>> {
+        val userImagesRef = storageReference.child("user/$userId/profilepic")
 
+        val taskCompletionSource = TaskCompletionSource<List<String>>()
+        userImagesRef.listAll().addOnSuccessListener { listResult ->
+            val tasks = listResult.items.map { it.downloadUrl }
+            Tasks.whenAllSuccess<Uri>(tasks).addOnSuccessListener { uris ->
+                val urlStrings = uris.map { it.toString() } // Convert URIs to Strings
+                taskCompletionSource.setResult(urlStrings)
+            }
+        }.addOnFailureListener { exception ->
+            taskCompletionSource.setException(exception)
+        }
+        return taskCompletionSource.task
+    }
     fun getUserDetails(userId: String): Task<DocumentSnapshot> {
         return db.collection("users").document(userId).get()
     }

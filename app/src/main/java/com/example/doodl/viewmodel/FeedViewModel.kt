@@ -16,6 +16,7 @@ import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -37,6 +38,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _likedPosts = MutableLiveData<List<Post>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
     private val _postTags = MutableLiveData<Map<String, List<String>>>()
+    private val _profileImages = MutableLiveData<List<String>>()
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userImageUrls: LiveData<List<String>> get() = _userImageUrls
@@ -45,6 +47,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val likedPosts: LiveData<List<Post>> get() = _likedPosts
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
+    val profileImages: LiveData<List<String>> = _profileImages
 
 
     var userName = MutableLiveData<String?>()
@@ -74,7 +77,16 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
         })
     }
-
+    fun fetchProfileImages() {
+        viewModelScope.launch {
+            try {
+                val images = repository.fetchProfileImages(userId).await()
+                _profileImages.value = images
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching profile images: ${exception.message}")
+            }
+        }
+    }
     fun fetchUserDetails(userId: String) {
         viewModelScope.launch {
             try {
@@ -272,13 +284,14 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 // Update user's profile in Firestore
                 repository.updateUserProfile(userId, newUsername, newBio, newProfilePicPath).await()
 
-                // Update user's posts with new username and new profile picture URL
+                // Update user's posts with new username and optionally new profile picture URL
                 repository.updateUserPostsUsername(userId, newUsername, newProfilePicPath).await()
 
                 // Update LiveData
                 userName.value = newUsername
                 userBio.value = newBio
                 profilePic.value = newProfilePicUrl
+
                 // Notify UI of successful update
                 Log.d("FeedViewModel", "Updating profile - success")
             } catch (exception: Exception) {
@@ -286,6 +299,31 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     } //new
+    fun updateProfileWithImageUrl(newUsername: String, newBio: String, imageUrl: String) {
+        Log.d("FeedViewModel", "Updating profile with image URL - started")
+        viewModelScope.launch {
+            try {
+                // Extract the path from the URL
+                val imagePath = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).path
+
+                // Update user's profile in Firestore
+                repository.updateUserProfile(userId, newUsername, newBio, imagePath).await()
+
+                // Update user's posts with new username and new profile picture URL
+                repository.updateUserPostsUsername(userId, newUsername, imagePath).await()
+
+                // Update LiveData
+                userName.value = newUsername
+                userBio.value = newBio
+                profilePic.value = imageUrl // Store the full URL
+                // Notify UI of successful update
+                Log.d("FeedViewModel", "Updating profile with image URL - success")
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error updating user information with image URL: ${exception.message}")
+            }
+        }
+    }
+
     fun checkUsernameAvailability(username: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {

@@ -21,9 +21,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -87,15 +89,16 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
         feedViewModel.fetchUserImageUrls()
         feedViewModel.fetchUserDetails(userId)
         feedViewModel.fetchLikedPosts()
+        feedViewModel.fetchProfileImages()
     }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
     val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
-
     val userName = feedViewModel.userName.observeAsState(null).value
     val userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
     val profilePicUrl by feedViewModel.profilePic.observeAsState()
+    val profileImages by feedViewModel.profileImages.observeAsState(emptyList())
     val context = LocalContext.current //For updating profile pic
 
     // Prepare the launcher for picking an image
@@ -147,15 +150,17 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     ProfileEditPopup(
                         currentUsername = feedViewModel.userName.value,
                         currentBio = feedViewModel.userBio.value,
+                        profileImages = profileImages,
                         onImageSelected = { pickImageLauncher.launch("image/*") },
-                        onConfirm = { newUsername, newBio ->
-                            // Handle the profile update here
-                            // Only update username and bio, image is handled separately
-                            feedViewModel.updateProfile(
-                                newUsername = newUsername,
-                                newBio = newBio,
-                                imageByteArray = null // Pass an empty array for image
-                            )
+                        onConfirm = { newUsername, newBio, selectedImageUrl ->
+                            // If a new image URL is selected from the stored images, update with that URL
+                            if (selectedImageUrl != null) {
+                                // User selected an existing image URL
+                                feedViewModel.updateProfileWithImageUrl(newUsername, newBio, selectedImageUrl)
+                            } else {
+                                // Only username and bio are being updated
+                                feedViewModel.updateProfile(newUsername, newBio, null)
+                            }
                         },
                         viewModel = feedViewModel
                     )
@@ -188,7 +193,9 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     // We can show a default image here
                     RoundImageCard(
                         image = R.drawable.profpic8, // Default or placeholder image
-                        Modifier.size(115.dp).padding(5.dp)
+                        Modifier
+                            .size(115.dp)
+                            .padding(5.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
@@ -258,13 +265,15 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
 fun ProfileEditPopup(
     currentUsername: String?,
     currentBio: String?,
+    profileImages: List<String>,
     onImageSelected: () -> Unit, // Callback when the image icon is clicked
-    onConfirm: (String, String) -> Unit, // Callback when the save button is clicked
+    onConfirm: (String, String, String?) -> Unit, // Callback when the save button is clicked
     viewModel: FeedViewModel
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
     var newUsername by remember { mutableStateOf(currentUsername ?: "") }
     var newBio by remember { mutableStateOf(currentBio ?: "") }
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current // Get the local context
 
     // Icon to open the popup
@@ -288,21 +297,46 @@ fun ProfileEditPopup(
         AlertDialog(
             containerColor = Color.Black,
             modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
-            onDismissRequest = { isPopupVisible = false },
+            onDismissRequest = {
+                isPopupVisible = false
+                selectedImageUrl = null
+            },
             title = { Text("Edit Your Profile") },
             text = {
                 Column {
                     Text(text = "Set your profile picture", color = Color.White)
                     // Icon for picking an image
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = "Change Profile Picture",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clickable { onImageSelected() }
-                            .padding(16.dp)
-                            .size(48.dp)
-                    )
+                    Row {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = "Change Profile Picture",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable { onImageSelected() }
+                                .padding(16.dp)
+                                .size(48.dp)
+                        )
+                        LazyRow {
+                            items(profileImages) { imageUrl ->
+                                val isSelected = imageUrl == selectedImageUrl
+                                Image(
+                                    painter = rememberAsyncImagePainter(model = imageUrl),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .padding(8.dp)
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable {
+                                            selectedImageUrl = imageUrl
+                                        }
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(20.dp))
                     EditableTextField(
                         label = "Username",
@@ -315,6 +349,7 @@ fun ProfileEditPopup(
                         text = newBio,
                         onTextChanged = { newBio = it }
                     )
+
                 }
             },
             confirmButton = {
@@ -336,8 +371,8 @@ fun ProfileEditPopup(
                             if (!isAvailable && newUsername != currentUsername) {
                                 Toast.makeText(context, "Username already taken", Toast.LENGTH_SHORT).show()
                             } else {
+                                onConfirm(newUsername, newBio, selectedImageUrl)
                                 isPopupVisible = false
-                                onConfirm(newUsername, newBio)
                                 Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                             }
                         }
