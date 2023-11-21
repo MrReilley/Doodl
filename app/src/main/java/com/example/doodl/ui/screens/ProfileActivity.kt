@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -99,6 +100,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
     val profilePicUrl by feedViewModel.profilePic.observeAsState()
     val profileImages by feedViewModel.profileImages.observeAsState(emptyList())
+    val isFetchingUserPosts by feedViewModel.isFetchingUserPosts.observeAsState(false)
+    val isFetchingLikedPosts by feedViewModel.isFetchingLikedPosts.observeAsState(false)
     val context = LocalContext.current //For updating profile pic
 
     // Prepare the launcher for picking an image
@@ -245,15 +248,36 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             }
             when (selectedTabIndex) {
                 0 -> {
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight )
+                    if (isFetchingUserPosts) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight )
+                        }
                     }
+
                 }
                 1 -> {
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                    if (isFetchingLikedPosts) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                        }
                     }
                 }
             }

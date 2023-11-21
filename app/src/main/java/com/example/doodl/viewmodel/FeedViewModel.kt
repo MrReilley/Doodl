@@ -41,8 +41,9 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _postTags = MutableLiveData<Map<String, List<String>>>()
     private val _profileImages = MutableLiveData<List<String>>()
     private var lastVisiblePost: DocumentSnapshot? = null
-    //private var isFetchingPosts = false
     private val _isFetchingPosts = MutableLiveData<Boolean>(false)
+    private val _isFetchingUserPosts = MutableLiveData<Boolean>(false)
+    private val _isFetchingLikedPosts = MutableLiveData<Boolean>(false)
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userPosts: LiveData<List<Post>> get() = _userPosts
@@ -53,6 +54,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
     val profileImages: LiveData<List<String>> = _profileImages
     val isFetchingPosts: LiveData<Boolean> = _isFetchingPosts
+    val isFetchingUserPosts: LiveData<Boolean> = _isFetchingUserPosts
+    val isFetchingLikedPosts: LiveData<Boolean> = _isFetchingLikedPosts
 
 
     var userName = MutableLiveData<String?>()
@@ -64,6 +67,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchUserPosts() {
+        _isFetchingUserPosts.value = true
         viewModelScope.launch {
             try {
                 // Fetch the list of post IDs created by the user
@@ -87,6 +91,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching user's posts: ${exception.message}")
             }
+            _isFetchingUserPosts.value = false
         }
     }
     fun fetchProfileImages() {
@@ -175,6 +180,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
 
 
     fun fetchLikedPosts() {
+        _isFetchingLikedPosts.value = true
         viewModelScope.launch {
             try {
                 // Fetch liked post IDs
@@ -192,12 +198,12 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                         post
                     }
                 }
-
                 // Update LiveData with the fetched posts
                 _likedPosts.value = likedPostsData
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching liked posts: ${exception.message}")
             }
+            _isFetchingLikedPosts.value = false
         }
     }
 
