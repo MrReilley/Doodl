@@ -16,6 +16,7 @@ import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,6 +40,9 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
     private val _postTags = MutableLiveData<Map<String, List<String>>>()
     private val _profileImages = MutableLiveData<List<String>>()
+    private var lastVisiblePost: DocumentSnapshot? = null
+    //private var isFetchingPosts = false
+    private val _isFetchingPosts = MutableLiveData<Boolean>(false)
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userPosts: LiveData<List<Post>> get() = _userPosts
@@ -48,6 +52,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
     val profileImages: LiveData<List<String>> = _profileImages
+    val isFetchingPosts: LiveData<Boolean> = _isFetchingPosts
 
 
     var userName = MutableLiveData<String?>()
@@ -126,31 +131,48 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }
     }//modified for profile showing profile pic
 
-    fun fetchNewestPosts() {
+    fun fetchNewestPostsPaginated() {
+        if (_isFetchingPosts.value == true) return
+
+        _isFetchingPosts.value = true
         viewModelScope.launch {
             try {
-                val posts = repository.getNewestPosts().await()
+                val posts = repository.getNewestPosts(lastVisiblePost).await()
                 val updatedPosts = posts.mapNotNull { post ->
-                    val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
-                    val imageUrl = try {
-                        repository.getImageUrl(post.imagePath).await()
-                    } catch (exception: Exception) {
-                        "" // Fallback to empty string if image URL fetching fails
+                    try {
+                        // Fetch additional details for each post
+                        val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
+                        val imageUrl = try {
+                            repository.getImageUrl(post.imagePath).await()
+                        } catch (e: Exception) {
+                            "" // Fallback to empty string if image URL fetching fails
+                        }
+                        val profilePicUrl = try {
+                            post.profilePicPath?.let { repository.getProfilePicUrl(it).await() } ?: ""
+                        } catch (e: Exception) {
+                            "" // Fallback to empty string if profile picture URL fetching fails
+                        }
+                        // Return the updated post
+                        fetchTagsForPost(post.postId)
+                        post.copy(username = username, imageUrl = imageUrl, profilePicUrl = profilePicUrl)
+                    } catch (e: Exception) {
+                        null // Exclude the post if any error occurs
                     }
-                    val profilePicUrl = try {
-                        post.profilePicPath?.let { repository.getProfilePicUrl(it).await() } ?: ""
-                    } catch (exception: Exception) {
-                        "" // Fallback to empty string if profile picture URL fetching fails
-                    }
-                    fetchTagsForPost(post.postId)
-                    post.copy(imageUrl = imageUrl, username = username, profilePicUrl = profilePicUrl)
                 }
-                _newestPosts.value = updatedPosts
+                if (updatedPosts.isNotEmpty()) {
+                    lastVisiblePost = posts.last().snapshot
+                    val currentPosts = _newestPosts.value.orEmpty()
+                    _newestPosts.value = currentPosts + updatedPosts
+                }
+                _isFetchingPosts.value = false
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
+                _isFetchingPosts.value = false
             }
         }
     }
+
+
 
     fun fetchLikedPosts() {
         viewModelScope.launch {
