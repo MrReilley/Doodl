@@ -34,25 +34,22 @@ class Repository {
     }
     fun uploadProfileImage(userId: String, imageByteArray: ByteArray): Task<String> {
         fun getRandomNumber() = Random.nextInt(1000, 9999)
+
         // Create a TaskCompletionSource
         val taskCompletionSource = TaskCompletionSource<String>()
-        // First, fetch the username
-        getUsername(userId).addOnSuccessListener { username ->
-            // Generate filename with username and random number
-            val randomNumber = getRandomNumber()
-            val fileName = "${username ?: "user"}$randomNumber.png"
-            val fileRef = storageReference.child("user/$userId/profilepic/$fileName")
 
-            // Upload the file
-            fileRef.putBytes(imageByteArray).addOnSuccessListener {
-                // On success, set the result as the file reference path
-                taskCompletionSource.setResult(fileRef.path)
-            }.addOnFailureListener { exception ->
-                // On failure, set the exception
-                taskCompletionSource.setException(exception)
-            }
+        // Generate filename with random number
+        val randomNumber = getRandomNumber()
+        val fileName = "profilepic$randomNumber.png"
+        val filePath = "user/$userId/profilepic/$fileName"
+        val fileRef = storageReference.child(filePath)
+
+        // Upload the file
+        fileRef.putBytes(imageByteArray).addOnSuccessListener {
+            // On success, set the result as the file storage path
+            taskCompletionSource.setResult(filePath)
         }.addOnFailureListener { exception ->
-            // If fetching username fails, set the exception
+            // On failure, set the exception
             taskCompletionSource.setException(exception)
         }
 
