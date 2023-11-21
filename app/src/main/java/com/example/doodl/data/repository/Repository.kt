@@ -92,21 +92,29 @@ class Repository {
             }
         }
     }
+    fun getUserPostIds(userId: String): Task<List<String>> {
+        // Create a TaskCompletionSource to manage the task manually
+        val taskCompletionSource = TaskCompletionSource<List<String>>()
 
-    fun getUserImages(userId: String, onSuccess: (List<String>) -> Unit, onFailure: (Exception) -> Unit) {
-        // Reference to the logged-in user's images directory in Firebase storage
-        val userImagesRef = storageReference.child("user/$userId/posts")
+        // Query the 'posts' collection for documents where 'userId' matches the provided userId
+        db.collection("posts")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                // Extract post IDs from the documents
+                val postIds = documents.documents.mapNotNull { it.id }
+                taskCompletionSource.setResult(postIds)
+            }
+            .addOnFailureListener { exception ->
+                // Handle any errors that occur during the query
+                taskCompletionSource.setException(exception)
+            }
 
-        // Retrieve all file references in the user's posts directory
-        userImagesRef.listAll().addOnSuccessListener { listResult ->
-            // Map the results to their paths and trigger the onSuccess callback
-            val imagePaths = listResult.items.map { it.path }
-            onSuccess(imagePaths.reversed()) // .reversed will reverse the list so newest images come first
-        }.addOnFailureListener { exception ->
-            onFailure(exception)
-        }
+        // Return the Task from the TaskCompletionSource
+        return taskCompletionSource.task
     }
-    fun fetchProfileImages(userId: String): Task<List<String>> {
+
+    fun getProfileImages(userId: String): Task<List<String>> {
         val userImagesRef = storageReference.child("user/$userId/profilepic")
 
         val taskCompletionSource = TaskCompletionSource<List<String>>()

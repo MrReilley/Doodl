@@ -86,14 +86,14 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchUserImageUrls()
+        feedViewModel.fetchUserPosts()
         feedViewModel.fetchUserDetails(userId)
         feedViewModel.fetchLikedPosts()
         feedViewModel.fetchProfileImages()
     }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
+    val userPosts = feedViewModel.userPosts.observeAsState(emptyList()).value
     val userName = feedViewModel.userName.observeAsState(null).value
     val userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
@@ -247,7 +247,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileUsersPosts(imageUrls = imageUrls, navBarHeight = navBarHeight )
+                        ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight )
                     }
                 }
                 1 -> {
@@ -383,8 +383,8 @@ fun ProfileEditPopup(
     }
 }
 
-        @Composable
-fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
+@Composable
+fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
             val configuration = LocalConfiguration.current
             val maxScreenHeightDp = configuration.screenHeightDp.dp
             val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
@@ -396,17 +396,17 @@ fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
                     columns = GridCells.Fixed(3),
                     modifier = Modifier.height(availableHeight.dp)
                 ) {
-                    itemsIndexed(imageUrls) { index, imageUrl ->
+                    itemsIndexed(posts) { index, post ->
                         val itemsPerRow = 3
                         val rowNumber = index / itemsPerRow
-                        val isLastRow = rowNumber == (imageUrls.size - 1) / itemsPerRow
+                        val isLastRow = rowNumber == (posts.size - 1) / itemsPerRow
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .padding(8.dp)
                         ) {
                             Image(
-                                painter = rememberAsyncImagePainter(model = imageUrl),
+                                painter = rememberAsyncImagePainter(model = post.imageUrl),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier

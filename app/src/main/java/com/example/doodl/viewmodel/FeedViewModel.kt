@@ -30,9 +30,9 @@ import java.util.UUID
 // data and logic separately from the user interface. Acts as a bridge between the UI and the underlying data sources.
 
 class FeedViewModel(private val userId: String, private val repository: Repository) : ViewModel() {
-    // LiveData to hold a list of Bitmap images from Firebase.
+    // LiveData
     private val _newestPosts = MutableLiveData<List<Post>>()
-    private val _userImageUrls = MutableLiveData<List<String>>()
+    private val _userPosts = MutableLiveData<List<Post>>()
     private val _likesCountForPosts = MutableLiveData<Map<String, Int>>()
     private val _userLikedAPost = MutableLiveData<List<String>>()
     private val _likedPosts = MutableLiveData<List<Post>>()
@@ -41,7 +41,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _profileImages = MutableLiveData<List<String>>()
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
-    val userImageUrls: LiveData<List<String>> get() = _userImageUrls
+    val userPosts: LiveData<List<Post>> get() = _userPosts
     val likesCountForPosts: LiveData<Map<String, Int>> get() = _likesCountForPosts
     val userLikedAPost: LiveData<List<String>> get() = _userLikedAPost
     val likedPosts: LiveData<List<Post>> get() = _likedPosts
@@ -58,29 +58,36 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
-    fun fetchUserImageUrls() {
-        repository.getUserImages(userId, onSuccess = { imagePaths ->
-            viewModelScope.launch {
-                val urls = imagePaths.mapNotNull { path ->
-                    withContext(Dispatchers.IO) {
-                        try {
-                            repository.getImageUrl(path).await()
-                        } catch (exception: Exception) {
-                            Log.e("FeedViewModel", "URL fetch failed: ${exception.message}")
-                            null
-                        }
+    fun fetchUserPosts() {
+        viewModelScope.launch {
+            try {
+                // Fetch the list of post IDs created by the user
+                val userPostIds = repository.getUserPostIds(userId).await()
+
+                // Fetch post data for each post ID
+                val userPostsData = userPostIds.mapNotNull { postId ->
+                    val post = repository.getPostData(postId).await().toObject(Post::class.java)
+                    try {
+                        // Attempt to fetch the image URL
+                        post?.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                    } catch (e: Exception) {
+                        // If URL fetching fails, return the post without modifying imageUrl
+                        Log.e("FeedViewModel", "Error fetching image URL for post $postId: ${e.message}")
+                        post
                     }
                 }
-                _userImageUrls.value = urls
+
+                // Update LiveData with the fetched posts
+                _userPosts.value = userPostsData
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching user's posts: ${exception.message}")
             }
-        }, onFailure = { exception ->
-            Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
-        })
+        }
     }
     fun fetchProfileImages() {
         viewModelScope.launch {
             try {
-                val images = repository.fetchProfileImages(userId).await()
+                val images = repository.getProfileImages(userId).await()
                 _profileImages.value = images
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching profile images: ${exception.message}")
