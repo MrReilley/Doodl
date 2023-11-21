@@ -177,8 +177,6 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }
     }
 
-
-
     fun fetchLikedPosts() {
         _isFetchingLikedPosts.value = true
         viewModelScope.launch {
@@ -206,7 +204,6 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             _isFetchingLikedPosts.value = false
         }
     }
-
 
     fun likePost(postId: String) {
         val currentTimestamp = System.currentTimeMillis()
@@ -264,6 +261,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         currentLikes.remove(postId)
         _userLikedAPost.value = currentLikes
     }
+
     fun fetchLikesCountForPost(postId: String) {
         repository.getLikesCountForPost(postId).addOnSuccessListener { querySnapshot ->
             val likesCount = querySnapshot.size()
@@ -272,6 +270,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Error fetching likes count for post: ${exception.message}")
         }
     }
+
     fun fetchUserLikedAPost() {
         repository.getLikedPostsForUser(userId).addOnSuccessListener { querySnapshot ->
             val likedPostIds = querySnapshot.documents.mapNotNull { document ->
@@ -334,6 +333,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     } //new
+
     fun updateProfileWithImageUrl(newUsername: String, newBio: String, imageUrl: String) {
         Log.d("FeedViewModel", "Updating profile with image URL - started")
         viewModelScope.launch {
@@ -370,6 +370,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }//new
+
     suspend fun processImage(uri: Uri, context: Context): ByteArray? {
         return withContext(Dispatchers.IO) {
             // Set target size for the resized image to 400x400 pixels

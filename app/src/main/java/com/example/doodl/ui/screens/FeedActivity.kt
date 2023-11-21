@@ -97,7 +97,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp
     val maxFeedHeight = screenHeightDp - navBarHeight
-    // Display a vertical list of images, filling the available space
+    // Display a vertical list of images
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -106,7 +106,6 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
         itemsIndexed(posts) { index, post ->
             val isLastItem = index == posts.lastIndex
 
-            // Existing UI code for rendering each post
             PostItem(post, userLikedPosts, postTags, feedViewModel, context)
 
             if (isLastItem) {
@@ -114,7 +113,6 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 LaunchedEffect(key1 = Unit) {
                     feedViewModel.fetchNewestPostsPaginated()
                 }
-                // Optionally, show a loading indicator or a spacer here
                 Spacer(modifier = Modifier.height(65.dp))
             }
         }
@@ -210,11 +208,9 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 )
                 Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
-                // Spacer for alignment
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Your existing code for the download icon or other elements can go here
-                // ...
+                // We can place the download icon & logic here
             }
 
             // Displaying tags

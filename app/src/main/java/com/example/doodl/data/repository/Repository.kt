@@ -180,7 +180,6 @@ class Repository {
         }
     }//added pagination
 
-
     fun getImageUrl(imagePath: String): Task<String> {
         val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
         return storageRef.downloadUrl.continueWith { task ->
