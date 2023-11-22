@@ -158,15 +158,27 @@ class Repository {
     fun savePostToFirestore(post: Post): Task<Void> {
         return db.collection("posts").document(post.postId).set(post)
     }
-    fun getNewestPosts(): Task<List<Post>> {
-        // Return the Task from Firebase directly, ordered by timestamp in descending order
-        return db.collection("posts")
+    fun getNewestPosts(startAfter: DocumentSnapshot? = null, limit: Long = 3): Task<List<Post>> {
+        var query = db.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .get()
-            .continueWith {
-                it.result?.toObjects(Post::class.java) ?: emptyList()
+            .limit(limit)
+
+        startAfter?.let {
+            query = query.startAfter(it)
+        }
+
+        return query.get().continueWith { task ->
+            if (task.isSuccessful) {
+                task.result?.documents?.mapNotNull { document ->
+                    document.toObject(Post::class.java)?.apply {
+                        snapshot = document // Set the snapshot for each post
+                    }
+                } ?: emptyList()
+            } else {
+                throw task.exception ?: RuntimeException("Error fetching posts")
             }
-    }
+        }
+    }//added pagination
 
     fun getImageUrl(imagePath: String): Task<String> {
         val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
