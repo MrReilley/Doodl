@@ -46,6 +46,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -156,6 +158,24 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                if (post.userId != feedViewModel.currentUserID) {
+                    Button(
+                        onClick = {
+                            if (isFollowing) {
+                                feedViewModel.unfollowUser(post.userId)
+                            } else {
+                                feedViewModel.followUser(post.userId)
+                            }// Might need to add a cooldown similar to likes
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
+                    }
+                }
             }
 
             // Post image
@@ -214,26 +234,10 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                             }
                         }
                 )
-                Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
+                Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
                 Spacer(modifier = Modifier.width(8.dp))
-                if (post.userId != feedViewModel.currentUserID) {
-                    Button(
-                        onClick = {
-                            if (isFollowing) {
-                                feedViewModel.unfollowUser(post.userId)
-                            } else {
-                                feedViewModel.followUser(post.userId)
-                            }// Might need to add a cooldown similar to likes
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.padding(4.dp)
-                    ) {
-                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
-                    }
-                }
+
                 // We can place the download icon & logic here
             }
 
