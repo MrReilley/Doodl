@@ -44,6 +44,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _isFetchingPosts = MutableLiveData<Boolean>(false)
     private val _isFetchingUserPosts = MutableLiveData<Boolean>(false)
     private val _isFetchingLikedPosts = MutableLiveData<Boolean>(false)
+    //private val _isFollowingUser = MutableLiveData<Boolean>()
+    private val _followStatusMap = MutableLiveData<Map<String, Boolean>>().apply { value = emptyMap() }
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
     val userPosts: LiveData<List<Post>> get() = _userPosts
@@ -56,6 +58,8 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val isFetchingPosts: LiveData<Boolean> = _isFetchingPosts
     val isFetchingUserPosts: LiveData<Boolean> = _isFetchingUserPosts
     val isFetchingLikedPosts: LiveData<Boolean> = _isFetchingLikedPosts
+    //val isFollowingUser: LiveData<Boolean> = _isFollowingUser
+    val followStatusMap: LiveData<Map<String, Boolean>> = _followStatusMap
 
 
     var userName = MutableLiveData<String?>()
@@ -64,6 +68,9 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
 
     var lastLikeTimestamp = 0L // Timestamp of the last like action
     val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
+
+    val currentUserID: String
+        get() = userId
 
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
     fun fetchUserPosts() {
@@ -168,6 +175,13 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                     lastVisiblePost = posts.last().snapshot
                     val currentPosts = _newestPosts.value.orEmpty()
                     _newestPosts.value = currentPosts + updatedPosts
+                    // Check the follow status for each unique user in these posts
+                    val uniqueUserIds = updatedPosts.map { it.userId }.distinct()
+                    uniqueUserIds.forEach { userId ->
+                        if (userId != this@FeedViewModel.userId) {
+                            checkIfFollowing(userId)
+                        }
+                    }
                 }
                 _isFetchingPosts.value = false
             } catch (exception: Exception) {
@@ -404,7 +418,40 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }
+    fun followUser(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                repository.followUser(userId, followeeId).await()
+                updateFollowStatus(followeeId, true) // Update the follow status for this specific user
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error following user: ${e.message}")
+            }
+        }
+    }
+    fun unfollowUser(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                repository.unfollowUser(userId, followeeId).await()
+                updateFollowStatus(followeeId, false) // Update the follow status for this specific user
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error unfollowing user: ${e.message}")
+            }
+        }
+    }
+    fun updateFollowStatus(followeeId: String, isFollowing: Boolean) {
+        _followStatusMap.value = _followStatusMap.value.orEmpty() + (followeeId to isFollowing)
+    }
 
+    fun checkIfFollowing(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                val isFollowing = repository.isFollowing(userId, followeeId).await()
+                updateFollowStatus(followeeId, isFollowing)
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error checking following status: ${e.message}")
+            }
+        }
+    }
 }
 
 

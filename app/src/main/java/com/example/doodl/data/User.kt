@@ -6,9 +6,3 @@ data class DoodlUser(
     val profilePicPath: String?,
     val userBio: String?,
 )
-
-data class User(
-    val profileImageResource: Int,
-    val username: String,
-    val description: String?
-)

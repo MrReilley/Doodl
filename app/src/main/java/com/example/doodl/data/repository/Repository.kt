@@ -1,5 +1,6 @@
 package com.example.doodl.data.repository
 import android.net.Uri
+import com.example.doodl.data.Follow
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.google.android.gms.tasks.Task
@@ -241,6 +242,32 @@ class Repository {
                 querySnapshot?.isEmpty ?: true // Username is available if no documents are found
             }
     }//new for profileactivity
+    fun followUser(followerId: String, followeeId: String): Task<Void> {
+        val follow = Follow(followerId, followeeId)
+        return db.collection("follows").document().set(follow)
+    }
+    fun unfollowUser(followerId: String, followeeId: String): Task<Void> {
+        return db.collection("follows")
+            .whereEqualTo("followerId", followerId)
+            .whereEqualTo("followeeId", followeeId)
+            .get()
+            .continueWithTask { task ->
+                if (!task.isSuccessful || task.result?.isEmpty == true) {
+                    throw task.exception ?: Exception("No follow relationship found")
+                }
+                val document = task.result!!.documents[0]
+                db.collection("follows").document(document.id).delete()
+            }
+    }
+    fun isFollowing(followerId: String, followeeId: String): Task<Boolean> {
+        return db.collection("follows")
+            .whereEqualTo("followerId", followerId)
+            .whereEqualTo("followeeId", followeeId)
+            .get()
+            .continueWith { task ->
+                task.isSuccessful && task.result?.documents?.isNotEmpty() == true
+            }
+    }
 
 }
 
