@@ -214,7 +214,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 }
             }
 
-            // Like button and tags
+            // Like button and kebab menu
             Row(
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
