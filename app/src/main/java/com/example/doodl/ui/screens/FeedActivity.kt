@@ -25,9 +25,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -133,6 +137,8 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
     val isLiked = userLikedPosts.contains(post.postId)
     var applyColorFilter by remember { mutableStateOf(isLiked) }
     val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
+    val followColor = MaterialTheme.colorScheme.primary
+    val unfollowColor = MaterialTheme.colorScheme.tertiary
 
     Column(
         modifier = Modifier
@@ -166,16 +172,21 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                                 feedViewModel.unfollowUser(post.userId)
                             } else {
                                 feedViewModel.followUser(post.userId)
-                            }// Might need to add a cooldown similar to likes
+                            }
+                            // We might want to add a cooldown here, similar to the like functionality
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = if (isFollowing) unfollowColor else followColor
                         ),
                         modifier = Modifier.padding(4.dp)
                     ) {
-                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
+                        Text(
+                            text = if (isFollowing) "Unfollow" else "Follow",
+                            color = if (isFollowing) Color.Black else  Color.White// Text color
+                        )
                     }
                 }
+
             }
 
             // Post image
@@ -236,9 +247,16 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 )
                 Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // We can place the download icon & logic here
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = {
+                    // We can place a composable function with the download and delete post
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Post Menu",
+                        tint = Color.Black
+                    )
+                }
             }
 
             // Displaying tags
