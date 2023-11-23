@@ -369,7 +369,7 @@ fun ProfileEditPopup(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     EditableTextField(
-                        label = "Biography",
+                        label = "Bio",
                         text = newBio,
                         onTextChanged = { newBio = it }
                     )

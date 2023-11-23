@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -141,6 +143,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
     val unselectedColor = MaterialTheme.colorScheme.primary
     val selectedColor = MaterialTheme.colorScheme.tertiary
     var showMenu by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -184,7 +187,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                     ) {
                         Text(
                             text = if (isFollowing) "Unfollow" else "Follow",
-                            color = if (isFollowing) Color.Black else  Color.White// Text color
+                            color = if (isFollowing) Color.Black else  Color.White
                         )
                     }
                 }
@@ -251,7 +254,6 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
 
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = {
-                    // We can place a composable function with the download and delete post
                     showMenu = !showMenu
                 }) {
                     Icon(
@@ -278,19 +280,51 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                             )
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text("Delete Post", color = selectedColor) },
-                        onClick = { showMenu = false},
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                modifier = Modifier.size(20.dp),
-                                tint = selectedColor
-                            )
+                    if (post.userId == feedViewModel.currentUserID) {
+                        DropdownMenuItem(
+                            text = { Text("Delete Post", color = selectedColor) },
+                            onClick = { showConfirmationDialog = true},
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = selectedColor
+                                )
+                            }
+                        )
+                    }
+                }
+                // Confirmation Dialog
+                if (showConfirmationDialog) {
+                    AlertDialog(
+                        containerColor = Color.Black,
+                        modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+                        onDismissRequest = { showConfirmationDialog = false },
+                        title = { Text("Delete Post", color = Color.White) },
+                        text = { Text("Are you sure you want to delete this post?", color = Color.White) },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    feedViewModel.deletePost(post.postId)
+                                    showConfirmationDialog = false
+                                    showMenu = false // Close the dropdown menu
+                                }
+                            ) {
+                                Text("Confirm", color = Color.White)
+                            }
+                        },
+                        dismissButton = {
+                            Button(
+                                onClick = {
+                                    showConfirmationDialog = false
+                                    showMenu = false // Close the dropdown menu
+                                }
+                            ) {
+                                Text("Cancel", color = Color.White)
+                            }
                         }
                     )
-
                 }
             }
 

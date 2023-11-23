@@ -268,7 +268,36 @@ class Repository {
                 task.isSuccessful && task.result?.documents?.isNotEmpty() == true
             }
     }
+    fun deletePost(postId: String): Task<Void> {
+        val postDocumentRef = db.collection("posts").document(postId)
 
+        // Get the post document to retrieve the imagePath
+        return postDocumentRef.get().continueWithTask { task ->
+            val imagePath = task.result?.getString("imagePath")
+
+            // Start a batch write
+            val batch = db.batch()
+
+            // Delete the post document
+            batch.delete(postDocumentRef)
+
+            // Delete likes, this is a simple approach. Might need to change for larger scale.
+            return@continueWithTask db.collection("Likes").whereEqualTo("postId", postId).get()
+                .continueWithTask { likesTask ->
+                    for (document in likesTask.result) {
+                        batch.delete(document.reference)
+                    }
+                    batch.commit()
+                }.continueWithTask {
+                    // Delete the image from Firebase Storage
+                    if (imagePath != null) {
+                        FirebaseStorage.getInstance().getReference(imagePath).delete()
+                    } else {
+                        Tasks.forException<Void>(Exception("Image path not found"))
+                    }
+                }
+        }
+    }
 }
 
 

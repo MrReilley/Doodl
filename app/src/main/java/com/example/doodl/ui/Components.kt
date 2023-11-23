@@ -5,12 +5,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -35,12 +33,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -58,6 +57,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
+
 // Composable functions for reusable UI components
 
 @Composable
@@ -344,16 +344,15 @@ fun RoundImageCardFeed(
 }
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val isFocused = remember { mutableStateOf(false) }
     Column {
         OutlinedTextField(
             value = text,
             onValueChange = { onTextChanged(it) },
-            label = { Text(text = label)},
+            label = { Text(text = label, color = Color.White)},
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done
             ),
@@ -368,36 +367,12 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 focusedLabelColor = MaterialTheme.colorScheme.tertiary,
                 unfocusedLabelColor = Color.White,
                 cursorColor = MaterialTheme.colorScheme.tertiary,
-                textColor = MaterialTheme.colorScheme.tertiary
-            )
-        )
-    }
-}
-
-@Composable
-fun ProfilePictureItem(
-    imageResource: Int,
-    isSelected: Boolean,
-    onProfilePictureSelected: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .padding(8.dp)
-            .clickable {
-                onProfilePictureSelected()
-            }
-    ) {
-        Image(
-            painter = painterResource(id = imageResource),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+                textColor = if (isFocused.value) MaterialTheme.colorScheme.tertiary else Color.White
+            ),
             modifier = Modifier
-                .size(100.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(
-                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onBackground
-                )
-                .align(Alignment.Center)
+                .onFocusChanged { focusState ->
+                    isFocused.value = focusState.isFocused
+                }
         )
     }
 }

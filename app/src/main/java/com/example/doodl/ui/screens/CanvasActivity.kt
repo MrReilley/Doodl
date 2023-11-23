@@ -24,22 +24,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Scaffold
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material.TopAppBar
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -71,8 +71,6 @@ import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-import androidx.compose.runtime.remember
-import java.lang.Math.round
 
 // Composable functions for UI of each screen
 @Composable
@@ -190,7 +188,13 @@ fun CanvasActivity(
                     },
                     enabled = !isColorPickerVisible.value && paths.isNotEmpty()
                 ) {
-                    Text("Next", color = Color.Black)
+                    val textColor = if (!isColorPickerVisible.value && paths.isNotEmpty()) {
+                        Color.White
+                    } else {
+                        Color.Gray
+                    }
+
+                    Text("Next", color = textColor)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -462,7 +466,7 @@ fun PostInfoScreen(
                     enabled = !isUploading
                 ) {
                     if (isUploading) {
-                        CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
                     } else {
                         Text("Share", color = Color.White)
                     }

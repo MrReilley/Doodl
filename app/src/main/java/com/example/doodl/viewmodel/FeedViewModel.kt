@@ -452,6 +452,18 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }
+    fun deletePost(postId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deletePost(postId).await()
+                // Remove the post from the list and update LiveData
+                val updatedPosts = _newestPosts.value?.filterNot { it.postId == postId }
+                _newestPosts.value = updatedPosts
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error deleting post: ${e.message}")
+            }
+        }
+    }
 }
 
 
