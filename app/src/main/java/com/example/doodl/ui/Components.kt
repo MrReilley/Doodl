@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -373,6 +376,35 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 .onFocusChanged { focusState ->
                     isFocused.value = focusState.isFocused
                 }
+        )
+    }
+}
+@Composable
+fun ConfirmationDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    if (showDialog) {
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { onDismiss() },
+            title = { Text(title, color = Color.White) },
+            text = { Text(message, color = Color.White) },
+            confirmButton = {
+                Button(onClick = onConfirm) {
+                    Text("Yes", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(onClick = onCancel) {
+                    Text("No", color = Color.White)
+                }
+            }
         )
     }
 }

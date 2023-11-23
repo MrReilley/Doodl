@@ -70,13 +70,14 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.util.ComposableStateUtil
+import com.example.doodl.util.ValidationUtils
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
-import com.example.doodl.util.ValidationUtils
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -120,7 +121,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             )
         }
     }
-
+    var showLogoutDialog by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -176,10 +177,21 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
-                            if (navController != null) {
-                                logout(navController)
-                            }
+                            showLogoutDialog = true
                         }
+                )
+                ConfirmationDialog(
+                    showDialog = showLogoutDialog,
+                    onDismiss = { showLogoutDialog = false },
+                    title = "Logout",
+                    message = "Are you sure you want to log out?",
+                    onConfirm = {
+                        if (navController != null) {
+                            logout(navController)
+                        }
+                        showLogoutDialog = false
+                    },
+                    onCancel = { showLogoutDialog = false }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))

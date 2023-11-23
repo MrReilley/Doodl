@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,6 +60,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -295,37 +294,21 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                         )
                     }
                 }
-                // Confirmation Dialog
-                if (showConfirmationDialog) {
-                    AlertDialog(
-                        containerColor = Color.Black,
-                        modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
-                        onDismissRequest = { showConfirmationDialog = false },
-                        title = { Text("Delete Post", color = Color.White) },
-                        text = { Text("Are you sure you want to delete this post?", color = Color.White) },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    feedViewModel.deletePost(post.postId)
-                                    showConfirmationDialog = false
-                                    showMenu = false // Close the dropdown menu
-                                }
-                            ) {
-                                Text("Confirm", color = Color.White)
-                            }
-                        },
-                        dismissButton = {
-                            Button(
-                                onClick = {
-                                    showConfirmationDialog = false
-                                    showMenu = false // Close the dropdown menu
-                                }
-                            ) {
-                                Text("Cancel", color = Color.White)
-                            }
-                        }
-                    )
-                }
+                ConfirmationDialog(
+                    showDialog = showConfirmationDialog,
+                    onDismiss = { showConfirmationDialog = false },
+                    title = "Delete Post",
+                    message = "Are you sure you want to delete this post?",
+                    onConfirm = {
+                        feedViewModel.deletePost(post.postId)
+                        showConfirmationDialog = false
+                        showMenu = false // This closes the dropdown menu
+                    },
+                    onCancel = {
+                        showConfirmationDialog = false
+                        showMenu = false // This closes the dropdown menu
+                    }
+                )
             }
 
             // Displaying tags
