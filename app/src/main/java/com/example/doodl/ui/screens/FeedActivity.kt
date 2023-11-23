@@ -21,15 +21,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,8 +53,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -137,8 +138,9 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
     val isLiked = userLikedPosts.contains(post.postId)
     var applyColorFilter by remember { mutableStateOf(isLiked) }
     val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
-    val followColor = MaterialTheme.colorScheme.primary
-    val unfollowColor = MaterialTheme.colorScheme.tertiary
+    val unselectedColor = MaterialTheme.colorScheme.primary
+    val selectedColor = MaterialTheme.colorScheme.tertiary
+    var showMenu by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -176,7 +178,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                             // We might want to add a cooldown here, similar to the like functionality
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isFollowing) unfollowColor else followColor
+                            containerColor = if (isFollowing) selectedColor else unselectedColor
                         ),
                         modifier = Modifier.padding(4.dp)
                     ) {
@@ -250,12 +252,45 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = {
                     // We can place a composable function with the download and delete post
+                    showMenu = !showMenu
                 }) {
                     Icon(
                         imageVector = Icons.Filled.MoreVert,
                         contentDescription = "Post Menu",
                         tint = Color.Black
                     )
+
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(Color.Black)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Download Doodle", color = selectedColor) },
+                        onClick = { showMenu = false },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "Download",
+                                modifier = Modifier.size(20.dp),
+                                tint = selectedColor
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete Post", color = selectedColor) },
+                        onClick = { showMenu = false},
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                modifier = Modifier.size(20.dp),
+                                tint = selectedColor
+                            )
+                        }
+                    )
+
                 }
             }
 
