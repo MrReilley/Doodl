@@ -1,11 +1,13 @@
 package com.example.doodl.ui.screens
 
+import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +25,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Filter
@@ -45,6 +53,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,7 +62,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -68,6 +78,10 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
     val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
     val postTags by feedViewModel.postTags.observeAsState(emptyMap())
+    val isFetchingPosts by feedViewModel.isFetchingPosts.observeAsState(false)
+    // Fetch images once the composable is launched
+    LaunchedEffect(feedViewModel) {
+        feedViewModel.fetchNewestPostsPaginated()
 
     // Use rememberSwipeRefreshState to manage the refresh state
     val refreshState = rememberSwipeRefreshState(isRefreshing = false)
@@ -77,6 +91,22 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
         feedViewModel.fetchNewestPosts()
         feedViewModel.fetchUserLikedAPost()
         refreshState.isRefreshing = false
+    }
+    // Check if posts are being fetched and the list is currently empty
+    val showCenteredLoadingIndicator = isFetchingPosts && newestPosts.isEmpty()
+
+    if (showCenteredLoadingIndicator) {
+        // Show centered loading indicator
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+        }
+    } else {
+        // Regular feed view
+        ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
     }
 
     SwipeRefresh(
@@ -89,9 +119,15 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+}
+
 @Composable
-fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
+fun ImageFeed(
+    posts: List<Post>,
+    userLikedPosts: List<String>,
+    postTags: Map<String, List<String>>,
+    feedViewModel: FeedViewModel,
+    navBarHeight: Int) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -128,242 +164,218 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
         ) {
             itemsIndexed(posts) {index, post ->
                 val isLastItem = index == posts.size - 1
+    // Display a vertical list of images
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxHeight()
+            .heightIn(max = maxFeedHeight.dp)
+    ) {
+        itemsIndexed(posts) { index, post ->
+            val isLastItem = index == posts.lastIndex
 
-                // For each image, create an Image composable
-                val isLiked = userLikedPosts.contains(post.postId)
-                var applyColorFilter by remember { mutableStateOf(isLiked) }
-                // background of feed
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .background(Color.White)
+            PostItem(post, userLikedPosts, postTags, feedViewModel, context)
+
+            if (isLastItem) {
+                // Trigger loading more posts when the last post is displayed
+                LaunchedEffect(key1 = Unit) {
+                    feedViewModel.fetchNewestPostsPaginated()
+                }
+                Spacer(modifier = Modifier.height(65.dp))
+            }
+        }
+    }
+}
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, context: Context) {
+    val isLiked = userLikedPosts.contains(post.postId)
+    var applyColorFilter by remember { mutableStateOf(isLiked) }
+    val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .background(Color.White)
+        ) {
+            // User profile and post information
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RoundImageCardFeed(
+                    url = post.profilePicUrl ?: "",
+                    Modifier
+                        .size(48.dp)
+                        .padding(4.dp)
+                )
+                Text(
+                    text = post.username ?: "Anonymous",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (post.userId != feedViewModel.currentUserID) {
+                    Button(
+                        onClick = {
+                            if (isFollowing) {
+                                feedViewModel.unfollowUser(post.userId)
+                            } else {
+                                feedViewModel.followUser(post.userId)
+                            }// Might need to add a cooldown similar to likes
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(4.dp)
                     ) {
-                        // feed card layout
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RoundImageCard(
-                                image = R.drawable.profpic8,// needs replacing for user's pp
-                                Modifier
-                                    .size(48.dp)
-                                    .padding(4.dp)
-                            )
-                            Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
-                        }
-                        Image(
-                            // Convert Bitmap to a format Image composable understands and renders it
-                            painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
-                            contentDescription = null,
-                            // Style modifiers to control the layout and appearance of the image
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(0.68f)
-                                .padding(8.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(id = R.drawable.likeicon),
-                                contentDescription = null,
-                                colorFilter = if (!applyColorFilter) {
-                                    ColorFilter.tint(Color.LightGray)
-                                } else {
-                                    ColorFilter.tint(Color.Red)
-                                },
-                                alignment = Alignment.TopEnd,
-                                modifier = Modifier.clickable {
-                                    // Toggle the applyColorFilter when the image is clicked
-                                    val currentTimeStamp = System.currentTimeMillis()
-                                    if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
-                                        applyColorFilter = !applyColorFilter
-                                        if(applyColorFilter){
-                                            feedViewModel.likePost(post.postId)
-                                            val message = "You liked a post"
-                                            val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                            // Display a toast message using the obtained context
-                                            Toast.makeText(context, message, duration).show()
-                                        }else{
-                                            feedViewModel.unlikePost(post.postId)
-                                            val message = "You disliked a post"
-                                            val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                            // Display a toast message using the obtained context
-                                            Toast.makeText(context, message, duration).show()
-                                        }
-                                    } else {
-                                        Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
-                                    }
-
-                                }
-                            )
-                            Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            /*Image(
-                                painter = painterResource(id = R.drawable.downloadicon),
-                                contentDescription = "Download",
-                                modifier = Modifier.clickable {
-                                    val message = "This is a fake download lol"
-                                    val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                    // Display a toast message using the obtained context
-                                    Toast.makeText(context, message, duration).show()
-                                }.size(26.dp)
-                            )*/
-                        }
-                        val tagsForThisPost = postTags[post.postId] ?: emptyList()
-                        FlowRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            tagsForThisPost.forEach { tag ->
-                                Text(
-                                    text = "#$tag",
-                                    modifier = Modifier
-                                        .padding(4.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color.Gray.copy(alpha = 0.2f))
-                                        .padding(start = 4.dp, end = 4.dp),
-                                    color = Color.Gray
-                                )
-                            }
-                        }
+                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
                     }
                 }
-                if (isLastItem) {
-                    Spacer(modifier = Modifier.padding(bottom = 65.dp))
+            }
+
+            // Post image
+            if (!post.imageUrl.isNullOrEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = post.imageUrl),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.68f)
+                        .padding(8.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.68f)
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No Image Available", color = Color.Black)
+                }
+            }
+
+            // Like button and tags
+            Row(
+                modifier = Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Like button
+                Image(
+                    painter = painterResource(id = R.drawable.likeicon),
+                    contentDescription = null,
+                    colorFilter = if (!applyColorFilter) {
+                        ColorFilter.tint(Color.LightGray)
+                    } else {
+                        ColorFilter.tint(Color.Red)
+                    },
+                    alignment = Alignment.TopEnd,
+                    modifier = Modifier
+                        .clickable {
+                            // Like/unlike post logic
+                            val currentTimeStamp = System.currentTimeMillis()
+                            if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
+                                applyColorFilter = !applyColorFilter
+                                if (applyColorFilter) {
+                                    feedViewModel.likePost(post.postId)
+                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    feedViewModel.unlikePost(post.postId)
+                                    Toast.makeText(context, "You disliked a post", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                )
+                Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // We can place the download icon & logic here
+            }
+
+            // Displaying tags
+            val tagsForThisPost = postTags[post.postId] ?: emptyList()
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
+                tagsForThisPost.forEach { tag ->
+                    Text(
+                        text = "#$tag",
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Gray.copy(alpha = 0.2f))
+                            .padding(start = 4.dp, end = 4.dp),
+                        color = Color.Gray
+                    )
                 }
             }
         }
     }
-
 }
-
-/*@Composable
-fun FilterDialog(
-    tags: List<String>,
-    selectedTags: Set<String>,
-    onFilterSelected: (Set<String>) -> Unit,
-    onDismissRequest: () -> Unit
-) {
-    var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableSet()) }
-
-    AlertDialog(
-        onDismissRequest = {
-            // Save the selected tags when the dialog is dismissed
-            onFilterSelected(selectedTagsState)
-            onDismissRequest()
-        },
-        title = {
-            Text("Filter by Tags")
-        },
-        buttons = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
+            @Composable
+            fun FilterDialog(
+                tags: List<String>,
+                selectedTags: MutableList<String>,
+                onFilterSelected: (List<String>) -> Unit,
+                onDismissRequest: () -> Unit
             ) {
-                TextButton(onClick = {
-                    // Reset selected tags to an empty set
-                    selectedTagsState = mutableSetOf()
-                }) {
-                    Text("Clear All")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = {
-                    // Save the selected tags and dismiss the dialog
-                    onFilterSelected(selectedTagsState)
-                    onDismissRequest()
-                }) {
-                    Text("Apply")
-                }
-            }
-        },
-        text = {
-            // Display checkboxes for each tag
-            tags.forEach { tag ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    Checkbox(
-                        checked = selectedTagsState.contains(tag),
-                        onCheckedChange = {
-                            // Update the selected tags when the checkbox state changes
-                            if (it) {
-                                selectedTagsState.add(tag)
-                            } else {
-                                selectedTagsState.remove(tag)
+                var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableList()) }
+
+                AlertDialog(
+                    onDismissRequest = {
+                        // Save the selected tags when the dialog is dismissed
+                        onFilterSelected(selectedTagsState)
+                        onDismissRequest()
+                    },
+                    title = {
+                        Text("Filter by Tags")
+                    },
+                    buttons = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = {
+                                // Reset selected tags to an empty list
+                                selectedTagsState = mutableListOf()
+                            }) {
+                                Text("Clear All")
                             }
-                        },
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(tag)
-                }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                // Save the selected tags and dismiss the dialog
+                                onFilterSelected(selectedTagsState)
+                                onDismissRequest()
+                            }) {
+                                Text("Apply")
+                            }
+                        }
+                    },
+                    text = {
+                        // Display checkboxes for each tag
+                        tags.forEach { tag ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                TagButton(tag, selectedTagsState)
+                            }
+                        }
+                    }
+                )
             }
-        }
-    )
-}*/
-@Composable
-fun FilterDialog(
-    tags: List<String>,
-    selectedTags: MutableList<String>,
-    onFilterSelected: (List<String>) -> Unit,
-    onDismissRequest: () -> Unit
-) {
-    var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableList()) }
-
-    AlertDialog(
-        onDismissRequest = {
-            // Save the selected tags when the dialog is dismissed
-            onFilterSelected(selectedTagsState)
-            onDismissRequest()
-        },
-        title = {
-            Text("Filter by Tags")
-        },
-        buttons = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = {
-                    // Reset selected tags to an empty list
-                    selectedTagsState = mutableListOf()
-                }) {
-                    Text("Clear All")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = {
-                    // Save the selected tags and dismiss the dialog
-                    onFilterSelected(selectedTagsState)
-                    onDismissRequest()
-                }) {
-                    Text("Apply")
-                }
-            }
-        },
-        text = {
-            // Display checkboxes for each tag
-            tags.forEach { tag ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    TagButton(tag, selectedTagsState)
-                }
-            }
-        }
-    )
-}

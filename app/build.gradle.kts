@@ -60,7 +60,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.navigation:navigation-runtime-ktx:2.7.4")
+    implementation("androidx.navigation:navigation-runtime-ktx:2.7.5")
     implementation("androidx.tv:tv-material:1.0.0-alpha10")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -71,16 +71,16 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     // For Compose
-    implementation ("androidx.compose.ui:ui:1.5.3")
-    implementation ("androidx.compose.ui:ui-tooling:1.5.3")
-    implementation ("androidx.compose.runtime:runtime:1.5.3")
-    implementation ("androidx.compose.foundation:foundation:1.5.3")
-    implementation ("androidx.compose.material:material:1.5.3")
-    implementation ("androidx.compose.material:material-icons-core:1.5.3")
-    implementation ("androidx.compose.material:material-icons-extended:1.5.3")
+    implementation ("androidx.compose.ui:ui:1.5.4")
+    implementation ("androidx.compose.ui:ui-tooling:1.5.4")
+    implementation ("androidx.compose.runtime:runtime:1.5.4")
+    implementation ("androidx.compose.foundation:foundation:1.5.4")
+    implementation ("androidx.compose.material:material:1.5.4")
+    implementation ("androidx.compose.material:material-icons-core:1.5.4")
+    implementation ("androidx.compose.material:material-icons-extended:1.5.4")
 
     // For Navigation Compose
-    implementation ("androidx.navigation:navigation-compose:2.7.4")
+    implementation ("androidx.navigation:navigation-compose:2.7.5")
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
@@ -89,16 +89,16 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-common-java8:2.6.2")
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     //Firebase
-    implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
-    implementation("com.google.firebase:firebase-database-ktx:20.2.2")
-    implementation("com.google.firebase:firebase-firestore-ktx:24.8.1")
-    implementation("com.google.firebase:firebase-auth-ktx:22.1.2")
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
+    implementation("com.google.firebase:firebase-database-ktx:20.3.0")
+    implementation("com.google.firebase:firebase-firestore-ktx:24.9.1")
+    implementation("com.google.firebase:firebase-auth-ktx:22.2.0")
     //LiveData Compose dependency
-    implementation("androidx.compose.runtime:runtime-livedata:1.5.3")
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
     //Navigation compose
-    implementation ("androidx.navigation:navigation-compose:2.7.4")
+    implementation ("androidx.navigation:navigation-compose:2.7.5")
     implementation ("com.google.android.material:material:1.10.0")
-    implementation ("androidx.compose.material:material:1.5.3")
+    implementation ("androidx.compose.material:material:1.5.4")
 
     // Color Picker
     implementation("com.github.skydoves:colorpicker-compose:1.0.5")

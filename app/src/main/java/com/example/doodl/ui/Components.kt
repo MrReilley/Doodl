@@ -54,6 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
@@ -308,6 +309,40 @@ fun RoundImageCard(
         )
     }
 }
+
+@Composable
+fun RoundImageCardFeed(
+    url: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
+) {
+    if(url.isBlank()) {
+        // We can have a default image here instead of text
+        Card(shape = CircleShape, modifier = modifier) {
+            Text(
+                "No Image",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    } else {
+        Card(
+            shape = CircleShape,
+            modifier = modifier
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(model = url),
+                contentDescription = null,
+                contentScale = contentScale,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .size(24.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
+
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable

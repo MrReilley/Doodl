@@ -1,19 +1,28 @@
 package com.example.doodl.viewmodel
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 
@@ -22,129 +31,191 @@ import java.util.UUID
 // data and logic separately from the user interface. Acts as a bridge between the UI and the underlying data sources.
 
 class FeedViewModel(private val userId: String, private val repository: Repository) : ViewModel() {
-    // LiveData to hold a list of Bitmap images from Firebase.
+    // LiveData
     private val _newestPosts = MutableLiveData<List<Post>>()
-    private val _userImageUrls = MutableLiveData<List<String>>()
+    private val _userPosts = MutableLiveData<List<Post>>()
     private val _likesCountForPosts = MutableLiveData<Map<String, Int>>()
     private val _userLikedAPost = MutableLiveData<List<String>>()
     private val _likedPosts = MutableLiveData<List<Post>>()
     private val _postLikesCount = MutableLiveData<Map<String, Int>>()
     private val _postTags = MutableLiveData<Map<String, List<String>>>()
+    private val _profileImages = MutableLiveData<List<String>>()
+    private var lastVisiblePost: DocumentSnapshot? = null
+    private val _isFetchingPosts = MutableLiveData<Boolean>(false)
+    private val _isFetchingUserPosts = MutableLiveData<Boolean>(false)
+    private val _isFetchingLikedPosts = MutableLiveData<Boolean>(false)
+    //private val _isFollowingUser = MutableLiveData<Boolean>()
+    private val _followStatusMap = MutableLiveData<Map<String, Boolean>>().apply { value = emptyMap() }
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
-    val userImageUrls: LiveData<List<String>> get() = _userImageUrls
+    val userPosts: LiveData<List<Post>> get() = _userPosts
     val likesCountForPosts: LiveData<Map<String, Int>> get() = _likesCountForPosts
     val userLikedAPost: LiveData<List<String>> get() = _userLikedAPost
     val likedPosts: LiveData<List<Post>> get() = _likedPosts
     val postLikesCount: LiveData<Map<String, Int>> get() = _postLikesCount
     val postTags: LiveData<Map<String, List<String>>> get() = _postTags
+    val profileImages: LiveData<List<String>> = _profileImages
+    val isFetchingPosts: LiveData<Boolean> = _isFetchingPosts
+    val isFetchingUserPosts: LiveData<Boolean> = _isFetchingUserPosts
+    val isFetchingLikedPosts: LiveData<Boolean> = _isFetchingLikedPosts
+    //val isFollowingUser: LiveData<Boolean> = _isFollowingUser
+    val followStatusMap: LiveData<Map<String, Boolean>> = _followStatusMap
 
 
     var userName = MutableLiveData<String?>()
     var userBio = MutableLiveData<String?>()
-    var profilePic = MutableLiveData<Bitmap?>()
+    var profilePic = MutableLiveData<String?>()
 
     var lastLikeTimestamp = 0L // Timestamp of the last like action
     val likeCooldown = 1000L // Minimum cooldown period between likes in milliseconds
 
+    val currentUserID: String
+        get() = userId
+
     // Function to fetch all images from Firebase storage and update `_images` LiveData.
-    fun fetchUserImageUrls() {
-        repository.fetchUserImages(userId, onSuccess = { imagePaths ->
-            viewModelScope.launch {
-                val urls = imagePaths.mapNotNull { path ->
-                    withContext(Dispatchers.IO) {
-                        try {
-                            repository.getImageUrl(path).await()
-                        } catch (exception: Exception) {
-                            Log.e("FeedViewModel", "URL fetch failed: ${exception.message}")
-                            null
-                        }
+    fun fetchUserPosts() {
+        _isFetchingUserPosts.value = true
+        viewModelScope.launch {
+            try {
+                // Fetch the list of post IDs created by the user
+                val userPostIds = repository.getUserPostIds(userId).await()
+
+                // Fetch post data for each post ID
+                val userPostsData = userPostIds.mapNotNull { postId ->
+                    val post = repository.getPostData(postId).await().toObject(Post::class.java)
+                    try {
+                        // Attempt to fetch the image URL
+                        post?.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                    } catch (e: Exception) {
+                        // If URL fetching fails, return the post without modifying imageUrl
+                        Log.e("FeedViewModel", "Error fetching image URL for post $postId: ${e.message}")
+                        post
                     }
                 }
-                _userImageUrls.value = urls
+
+                // Update LiveData with the fetched posts
+                _userPosts.value = userPostsData
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching user's posts: ${exception.message}")
             }
-        }, onFailure = { exception ->
-            Log.e("FeedViewModel", "Fetching paths failed: ${exception.message}")
-        })
+            _isFetchingUserPosts.value = false
+        }
     }
-
+    fun fetchProfileImages() {
+        viewModelScope.launch {
+            try {
+                val images = repository.getProfileImages(userId).await()
+                _profileImages.value = images
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error fetching profile images: ${exception.message}")
+            }
+        }
+    }
     fun fetchUserDetails(userId: String) {
-        repository.getUserDetails(userId).addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                userName.value = document.getString("username") ?: "Anonymous"
-                userBio.value = document.getString("userBio")
+        viewModelScope.launch {
+            try {
+                val document = repository.getUserDetails(userId).await()
+                if (document.exists()) {
+                    userName.value = document.getString("username") ?: "Anonymous"
+                    userBio.value = document.getString("userBio")
 
-                val profilePicPath = document.getString("profilePicPath")
-                if (profilePicPath != null) {
-                    viewModelScope.launch {
-                        withContext(Dispatchers.IO) {
-                            try {
-                                // If profilePicPath is not null, attempt to download the profile picture
-                                val bitmap = repository.downloadImage(profilePicPath).await()
-                                profilePic.postValue(bitmap)
-                            } catch (exception: Exception) {
-                                Log.e("FeedViewModel", "Profile picture download failed: ${exception.message}")
-                            }
+                    val profilePicPath = document.getString("profilePicPath")
+                    if (!profilePicPath.isNullOrEmpty()) {
+                        try {
+                            // Fetch URL from the path
+                            val profilePicUrl = repository.getProfilePicUrl(profilePicPath).await()
+                            profilePic.value = profilePicUrl // Store the URL
+                        } catch (exception: Exception) {
+                            Log.e("FeedViewModel", "Profile picture URL fetch failed: ${exception.message}")
+                            profilePic.value = null // Set to null if fetching URL fails
                         }
+                    } else {
+                        profilePic.value = null
                     }
                 } else {
+                    // Handle the case where the document doesn't exist.
                     profilePic.value = null
                 }
-            } else {
-                // Handle the case where the document doesn't exist.
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error fetching user details: ${e.message}")
+                profilePic.value = null
             }
-        }.addOnFailureListener {
-            // Handle any errors here.
         }
-    }
-    fun updateUserProfile(username: String, userBio: String) {
-        repository.updateUserDetails(userId, username, userBio).addOnSuccessListener {
-            // Successfully updated user details
-            this.userName.value = username
-            this.userBio.value = userBio
-            // You can also show some feedback to the user here
-        }.addOnFailureListener { exception ->
-            // Handle the error
-            Log.e("FeedViewModel", "Error updating user profile: ${exception.message}")
-        }
-    }
+    }//modified for profile showing profile pic
 
-    fun fetchNewestPosts() {
+    fun fetchNewestPostsPaginated() {
+        if (_isFetchingPosts.value == true) return
+
+        _isFetchingPosts.value = true
         viewModelScope.launch {
             try {
-                val posts = repository.getNewestPosts().await()
-                val updatedPosts = posts.map { post ->
-                    val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
-                    fetchTagsForPost(post.postId)
-                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await(), username = username)
+                val posts = repository.getNewestPosts(lastVisiblePost).await()
+                val updatedPosts = posts.mapNotNull { post ->
+                    try {
+                        // Fetch additional details for each post
+                        val username = repository.getUserDetails(post.userId).await().getString("username") ?: "Anonymous"
+                        val imageUrl = try {
+                            repository.getImageUrl(post.imagePath).await()
+                        } catch (e: Exception) {
+                            "" // Fallback to empty string if image URL fetching fails
+                        }
+                        val profilePicUrl = try {
+                            post.profilePicPath?.let { repository.getProfilePicUrl(it).await() } ?: ""
+                        } catch (e: Exception) {
+                            "" // Fallback to empty string if profile picture URL fetching fails
+                        }
+                        // Return the updated post
+                        fetchTagsForPost(post.postId)
+                        post.copy(username = username, imageUrl = imageUrl, profilePicUrl = profilePicUrl)
+                    } catch (e: Exception) {
+                        null // Exclude the post if any error occurs
+                    }
                 }
-                _newestPosts.value = updatedPosts
+                if (updatedPosts.isNotEmpty()) {
+                    lastVisiblePost = posts.last().snapshot
+                    val currentPosts = _newestPosts.value.orEmpty()
+                    _newestPosts.value = currentPosts + updatedPosts
+                    // Check the follow status for each unique user in these posts
+                    val uniqueUserIds = updatedPosts.map { it.userId }.distinct()
+                    uniqueUserIds.forEach { userId ->
+                        if (userId != this@FeedViewModel.userId) {
+                            checkIfFollowing(userId)
+                        }
+                    }
+                }
+                _isFetchingPosts.value = false
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching newest posts: ${exception.message}")
+                _isFetchingPosts.value = false
             }
         }
     }
+
     fun fetchLikedPosts() {
+        _isFetchingLikedPosts.value = true
         viewModelScope.launch {
             try {
-                // Step 1: Fetch liked post IDs
+                // Fetch liked post IDs
                 val likedPostIds = repository.getLikedPostsForUser(userId).await().documents.mapNotNull { it.getString("postId") }
 
-                // Step 2: Fetch post data for each liked post ID
-                val likedPostsData = likedPostIds.map { postId ->
-                    repository.getPostData(postId).await().toObject(Post::class.java)
-                }.filterNotNull()
-
-                // Step 3: Fetch URLs for the images of these posts
-                val likedPostsWithUrls = likedPostsData.map { post ->
-                    post.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                // Fetch post data for each liked post ID
+                val likedPostsData = likedPostIds.mapNotNull { postId ->
+                    val post = repository.getPostData(postId).await().toObject(Post::class.java)
+                    try {
+                        // Attempt to fetch the image URL
+                        post?.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                    } catch (e: Exception) {
+                        // If URL fetching fails, return the post without modifying imageUrl
+                        Log.e("FeedViewModel", "Error fetching image URL for post $postId: ${e.message}")
+                        post
+                    }
                 }
-
-                // Step 4: Update LiveData with the fetched posts
-                _likedPosts.value = likedPostsWithUrls
+                // Update LiveData with the fetched posts
+                _likedPosts.value = likedPostsData
             } catch (exception: Exception) {
                 Log.e("FeedViewModel", "Error fetching liked posts: ${exception.message}")
             }
+            _isFetchingLikedPosts.value = false
         }
     }
 
@@ -204,6 +275,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         currentLikes.remove(postId)
         _userLikedAPost.value = currentLikes
     }
+
     fun fetchLikesCountForPost(postId: String) {
         repository.getLikesCountForPost(postId).addOnSuccessListener { querySnapshot ->
             val likesCount = querySnapshot.size()
@@ -212,6 +284,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             Log.e("FeedViewModel", "Error fetching likes count for post: ${exception.message}")
         }
     }
+
     fun fetchUserLikedAPost() {
         repository.getLikedPostsForUser(userId).addOnSuccessListener { querySnapshot ->
             val likedPostIds = querySnapshot.documents.mapNotNull { document ->
@@ -236,6 +309,149 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
         }
     }
 
+    fun updateProfile(newUsername: String, newBio: String, imageByteArray: ByteArray?) {
+        Log.d("FeedViewModel", "Updating profile - started")
+        viewModelScope.launch {
+            try {
+                val updateProfilePic = imageByteArray != null
+                val newProfilePicPath = if (updateProfilePic) {
+                    // Upload new image and get the storage path
+                    repository.uploadProfileImage(userId, imageByteArray!!).await()
+                } else {
+                    // Keep the current profile picture path
+                    profilePic.value ?: ""
+                }
+
+                // Fetch the download URL only if a new image has been uploaded
+                val newProfilePicUrl = if (updateProfilePic) {
+                    repository.getImageUrl(newProfilePicPath).await()
+                } else {
+                    profilePic.value ?: ""
+                }
+
+                // Update user's profile in Firestore
+                repository.updateUserProfile(userId, newUsername, newBio, newProfilePicPath).await()
+
+                // Update user's posts with new username and optionally new profile picture URL
+                repository.updateUserPostsUsername(userId, newUsername, newProfilePicPath).await()
+
+                // Update LiveData
+                userName.value = newUsername
+                userBio.value = newBio
+                profilePic.value = newProfilePicUrl
+
+                // Notify UI of successful update
+                Log.d("FeedViewModel", "Updating profile - success")
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error updating user information: ${exception.message}")
+            }
+        }
+    } //new
+
+    fun updateProfileWithImageUrl(newUsername: String, newBio: String, imageUrl: String) {
+        Log.d("FeedViewModel", "Updating profile with image URL - started")
+        viewModelScope.launch {
+            try {
+                // Extract the path from the URL
+                val imagePath = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).path
+
+                // Update user's profile in Firestore
+                repository.updateUserProfile(userId, newUsername, newBio, imagePath).await()
+
+                // Update user's posts with new username and new profile picture URL
+                repository.updateUserPostsUsername(userId, newUsername, imagePath).await()
+
+                // Update LiveData
+                userName.value = newUsername
+                userBio.value = newBio
+                profilePic.value = imageUrl // Store the full URL
+                // Notify UI of successful update
+                Log.d("FeedViewModel", "Updating profile with image URL - success")
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error updating user information with image URL: ${exception.message}")
+            }
+        }
+    }
+
+    fun checkUsernameAvailability(username: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val isAvailable = repository.isUsernameAvailable(username).await()
+                onResult(isAvailable)
+            } catch (exception: Exception) {
+                Log.e("FeedViewModel", "Error checking username availability: ${exception.message}")
+                onResult(false) // Assume unavailable on error
+            }
+        }
+    }//new
+
+    suspend fun processImage(uri: Uri, context: Context): ByteArray? {
+        return withContext(Dispatchers.IO) {
+            // Set target size for the resized image to 400x400 pixels
+            val targetSize = 400
+
+            // Use Coil to load the image as a Bitmap, resize, and compress as PNG
+            context.imageLoader.execute(ImageRequest.Builder(context)
+                .data(uri)
+                .size(targetSize)
+                .apply {
+                    // Additional logic to maintain aspect ratio and crop if necessary
+                    transformations(CircleCropTransformation())
+                }
+                .build()).drawable?.toBitmap()?.let { bitmap ->
+                // Compress the Bitmap to PNG and convert to ByteArray
+                ByteArrayOutputStream().apply {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, this)
+                }.toByteArray()
+            }
+        }
+    }
+    fun onImageSelected(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            val processedImageBytes = processImage(uri, context)
+            processedImageBytes?.let { imageBytes ->
+                updateProfile(
+                    newUsername = userName.value ?: "",
+                    newBio = userBio.value ?: "",
+                    imageByteArray = imageBytes
+                )
+            }
+        }
+    }
+    fun followUser(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                repository.followUser(userId, followeeId).await()
+                updateFollowStatus(followeeId, true) // Update the follow status for this specific user
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error following user: ${e.message}")
+            }
+        }
+    }
+    fun unfollowUser(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                repository.unfollowUser(userId, followeeId).await()
+                updateFollowStatus(followeeId, false) // Update the follow status for this specific user
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error unfollowing user: ${e.message}")
+            }
+        }
+    }
+    fun updateFollowStatus(followeeId: String, isFollowing: Boolean) {
+        _followStatusMap.value = _followStatusMap.value.orEmpty() + (followeeId to isFollowing)
+    }
+
+    fun checkIfFollowing(followeeId: String) {
+        viewModelScope.launch {
+            try {
+                val isFollowing = repository.isFollowing(userId, followeeId).await()
+                updateFollowStatus(followeeId, isFollowing)
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error checking following status: ${e.message}")
+            }
+        }
+    }
 }
 
 
