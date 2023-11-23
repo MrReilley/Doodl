@@ -8,10 +8,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,6 +31,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -46,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -98,6 +103,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
     var userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+    val postTags by feedViewModel.postTags.observeAsState(emptyMap())
 
     val onNameUpdated: (String) -> Unit = { newName ->
         userName = newName
@@ -127,7 +133,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 else{
                     Spacer(modifier = Modifier.width(140.dp))
                 }*/
-                val maxUsernameLength = 15
 
                 userName?.let {
                     Text(
@@ -226,13 +231,13 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 0 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileUsersPosts(imageUrls = imageUrls, navBarHeight = navBarHeight )
+                        ProfileUsersPosts(imageUrls = imageUrls, navBarHeight = navBarHeight, postTags )
                     }
                 }
                 1 -> {
                     Spacer(modifier = Modifier.width(20.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                        ProfileLikedPosts(posts = likedPosts.value, navBarHeight, postTags)
                     }
                 }
             }
@@ -340,12 +345,17 @@ fun EditPopup(
     }
 }
 
+        @OptIn(ExperimentalMaterial3Api::class)
         @Composable
-fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
+fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int, postTags: Map<String, List<String>>) {
+            //data class for the userPosts needs to be a thing just like the likedPosts
             val configuration = LocalConfiguration.current
             val maxScreenHeightDp = configuration.screenHeightDp.dp
             val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
             val availableHeight = maxScreenHeight - navBarHeight
+
+            var isClicked by remember { mutableStateOf(false) }
+            var clickedPost by remember { mutableStateOf<String?>(null) } // Store the clicked post
             Box(
                 modifier = Modifier.fillMaxSize()
             ){
@@ -361,6 +371,10 @@ fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .padding(8.dp)
+                                .clickable {
+                                    clickedPost = imageUrl
+                                    isClicked = true
+                                }
                         ) {
                             Image(
                                 painter = rememberAsyncImagePainter(model = imageUrl),
@@ -376,15 +390,88 @@ fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
                         }
                     }
                 }
+                if (isClicked && clickedPost != null) {
+                    AlertDialog(
+                        modifier = Modifier.border(2.3.dp, Color.White),
+                        onDismissRequest = {
+                            isClicked = false
+                            clickedPost = null
+                        }
+                    ) {
+                        clickedPost?.let { post ->
+                            Box(
+                                modifier = Modifier
+                                    .width(550.dp)
+                                    .height(600.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    ) {
+                                        RoundImageCard(
+                                            image = R.drawable.profpic8, // Replace with the user's profile pic
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .padding(4.dp)
+                                        )
+                                        Text(
+                                            text = "Anonymous", //text = post.username ?: "Anonymous"
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black,
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        )
+                                    }
+
+                                    Image(
+                                        painter = rememberAsyncImagePainter(model = imageUrls),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(0.68f)
+                                            .padding(bottom = 8.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    /*val tagsForThisPost = postTags[imageUrls] ?: emptyList()
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        tagsForThisPost.forEach { tag ->
+                                            Text(
+                                                text = "#$tag",
+                                                modifier = Modifier
+                                                    .padding(2.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(Color.Gray.copy(alpha = 0.2f))
+                                                    .padding(start = 2.dp, end = 2.dp),
+                                                color = Color.Gray
+                                            )
+                                        }
+                                    }*/
+                                }
+                            }
+                        }
+                    }
+                }
             }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
+fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
     val configuration = LocalConfiguration.current
     val maxScreenHeightDp = configuration.screenHeightDp.dp
     val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
     val availableHeight = maxScreenHeight - navBarHeight
+
+    var isClicked by remember { mutableStateOf(false) }
+    var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -400,15 +487,17 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(8.dp)
+                        .padding(1.75.dp)
+                        .clickable {
+                            clickedPost = post
+                            isClicked = true
+                        }
                 ) {
                     Image(
                         painter = rememberAsyncImagePainter(model = post.imageUrl),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .scale(1.1f) // Apply the scaling factor to individual images
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 if (isLastRow) {
@@ -416,6 +505,86 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 }
             }
         }
+
+        if (isClicked && clickedPost != null) {
+            AlertDialog(
+                modifier = Modifier.border(2.3.dp, Color.White),
+                onDismissRequest = {
+                    isClicked = false
+                    clickedPost = null
+                }
+            ) {
+                clickedPost?.let { post ->
+                    Box(
+                        modifier = Modifier
+                            .width(550.dp)
+                            .height(600.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                RoundImageCard(
+                                    image = R.drawable.profpic8, // Replace with the user's profile pic
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .padding(4.dp)
+                                )
+                                Text(
+                                    text = post.username ?: "Anonymous",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            Image(
+                                painter = rememberAsyncImagePainter(model = post.imageUrl),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.68f)
+                                    .padding(bottom = 8.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                            /*Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(4.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.likeicon),
+                                    contentDescription = null,
+                                    colorFilter = ColorFilter.tint(Color.Red)
+                                )
+                            }*/
+
+                            val tagsForThisPost = postTags[post.imageUrl] ?: emptyList()
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                tagsForThisPost.forEach { tag ->
+                                    Text(
+                                        text = "#$tag",
+                                        modifier = Modifier
+                                            .padding(2.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color.Gray.copy(alpha = 0.2f))
+                                            .padding(start = 2.dp, end = 2.dp),
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-
