@@ -464,6 +464,17 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }
+    fun deleteAccount(userId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteUserAccount(userId).await()
+                onComplete() // Call the completion lambda after successful account deletion
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error deleting account: ${e.message}")
+            }
+        }
+    }
+
 }
 
 

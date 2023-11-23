@@ -298,6 +298,61 @@ class Repository {
                 }
         }
     }
+    fun deleteUserAccount(userId: String): Task<Void> {
+        // Helper function to delete documents in a collection for this user
+        fun deleteCollection(collectionPath: String): Task<Void> {
+            return db.collection(collectionPath)
+                .whereEqualTo("userId", userId)
+                .get()
+                .continueWithTask { task ->
+                    val batch = db.batch()
+                    for (document in task.result.documents) {
+                        batch.delete(document.reference)
+                    }
+                    batch.commit()
+                }
+        }
+
+        // Delete user's posts and associated images
+        val deletePostsTask = db.collection("posts").whereEqualTo("userId", userId).get()
+            .continueWithTask { task ->
+                val deleteImageTasks = mutableListOf<Task<Void>>()
+                val batch = db.batch()
+
+                for (post in task.result.documents) {
+                    val imagePath = post.getString("imagePath")
+                    if (imagePath != null) {
+                        deleteImageTasks.add(storageReference.child(imagePath).delete())
+                    }
+                    batch.delete(post.reference)
+                }
+
+                batch.commit().continueWithTask {
+                    Tasks.whenAll(deleteImageTasks)
+                }
+            }
+
+        // Delete likes, follows, and profile pictures
+        val deleteLikesTask = deleteCollection("Likes")
+        val deleteFollowsTask = deleteCollection("follows")
+        val deleteProfilePicsTask = storageReference.child("user/$userId/profilepic").listAll()
+            .continueWithTask { listResult ->
+                val deleteTasks = mutableListOf<Task<Void>>()
+                for (item in listResult.result.items) {
+                    deleteTasks.add(item.delete())
+                }
+                Tasks.whenAll(deleteTasks)
+            }
+
+        // Combine all tasks and then delete the user from Firebase Authentication
+        return Tasks.whenAll(deletePostsTask, deleteLikesTask, deleteFollowsTask, deleteProfilePicsTask)
+            .continueWithTask {
+                val user = auth.currentUser
+                user?.delete() ?: Tasks.forException<Void>(Exception("No authenticated user found"))
+            }
+    }
+
+
 }
 
 

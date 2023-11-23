@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -122,6 +123,9 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
         }
     }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showProgressIndicator by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -136,6 +140,19 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                if (showProgressIndicator) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.tertiary,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
                 Text(text = "")
                 Spacer(modifier = Modifier.width(15.dp))
                 userName?.let {
@@ -148,7 +165,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         color = Color.White
                     )
                 }
-                //Spacer(modifier = Modifier.width(155.dp))
                 Spacer(modifier = Modifier.weight(1f)) // Flexible spacer to push content to sides
                 userName?.let {
                     ProfileEditPopup(
@@ -169,7 +185,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         viewModel = feedViewModel
                     )
                 }
-                //Spacer(modifier = Modifier.weight(0.002f))
+                // Logout Account Icon
                 Spacer(modifier = Modifier.width(15.dp))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
@@ -192,6 +208,38 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         showLogoutDialog = false
                     },
                     onCancel = { showLogoutDialog = false }
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+                // Delete Account Icon
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Account",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable {
+                            showDeleteAccountDialog = true
+                        }
+                )
+
+                ConfirmationDialog(
+                    showDialog = showDeleteAccountDialog,
+                    onDismiss = { showDeleteAccountDialog = false },
+                    title = "Delete Account",
+                    message = "Are you sure you want to delete your account?",
+                    onConfirm = {
+                        showDeleteAccountDialog = false
+                        showProgressIndicator = true  // Show progress indicator
+                        // Call ViewModel function to handle account deletion
+                        feedViewModel.deleteAccount(userId) {
+                            showProgressIndicator = false
+                            if (navController != null) {
+                                logout(navController) // Logout and navigate to login screen
+                            }
+                        }
+                        showDeleteAccountDialog = false
+                        // Navigate to login screen or relevant page
+                    },
+                    onCancel = { showDeleteAccountDialog = false }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
