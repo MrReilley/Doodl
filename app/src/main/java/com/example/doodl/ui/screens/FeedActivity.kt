@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,6 +46,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -91,7 +95,12 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
 }
 
 @Composable
-fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
+fun ImageFeed(
+    posts: List<Post>,
+    userLikedPosts: List<String>,
+    postTags: Map<String, List<String>>,
+    feedViewModel: FeedViewModel,
+    navBarHeight: Int) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -123,6 +132,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
 fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, context: Context) {
     val isLiked = userLikedPosts.contains(post.postId)
     var applyColorFilter by remember { mutableStateOf(isLiked) }
+    val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
 
     Column(
         modifier = Modifier
@@ -148,6 +158,24 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                if (post.userId != feedViewModel.currentUserID) {
+                    Button(
+                        onClick = {
+                            if (isFollowing) {
+                                feedViewModel.unfollowUser(post.userId)
+                            } else {
+                                feedViewModel.followUser(post.userId)
+                            }// Might need to add a cooldown similar to likes
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
+                    }
+                }
             }
 
             // Post image
@@ -206,7 +234,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                             }
                         }
                 )
-                Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
+                Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
                 Spacer(modifier = Modifier.width(8.dp))
 
