@@ -125,7 +125,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
-    var showProgressIndicator by remember { mutableStateOf(false) }
     var showReAuthenticateDialog by remember { mutableStateOf(false) }
     var canDeleteAccount by remember { mutableStateOf(false) }
     var reAuthError by remember { mutableStateOf("") }
@@ -145,19 +144,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (showProgressIndicator) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.tertiary,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                }
                 Text(text = "")
                 Spacer(modifier = Modifier.width(15.dp))
                 userName?.let {
@@ -237,6 +223,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         feedViewModel.reAuthenticateUser(password) { isReAuthenticated ->
                             if (isReAuthenticated) {
                                 canDeleteAccount = true
+                                showReAuthenticateDialog = false
                                 showDeleteAccountDialog = true
                                 reAuthError = ""
                             } else {
@@ -257,12 +244,9 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     message = "Are you sure you want to delete your account? This action cannot be undone.",
                     onConfirm = {
                         showDeleteAccountDialog = false
-                        showProgressIndicator = true
+                        navController?.navigate("deleteAccountLoading")
                         feedViewModel.deleteAccount(userId) {
-                            showProgressIndicator = false
-                            if (navController != null) {
-                                logout(navController)
-                            }
+
                         }
                     },
                     onCancel = {

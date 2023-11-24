@@ -29,11 +29,13 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -62,6 +64,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import java.util.regex.Pattern
 
 // Composable functions for reusable UI components
@@ -467,5 +470,26 @@ fun ReAuthenticateDialog(
                 }
             }
         )
+    }
+}
+@Composable
+fun BlackScreenWithLoadingIndicator(navController: NavController) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 2.dp
+        )
+
+        // LaunchedEffect for delayed navigation
+        LaunchedEffect(Unit) {
+            delay(2000L)
+            navController.navigate("loginScreen") {
+                popUpTo("loginScreen") { inclusive = false }
+                launchSingleTop = true
+            }
+        }
     }
 }
