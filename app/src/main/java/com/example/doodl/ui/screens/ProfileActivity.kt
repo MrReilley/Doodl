@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -36,7 +35,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,7 +53,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -77,11 +74,12 @@ import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.ui.logout
 import com.example.doodl.util.ComposableStateUtil
+import com.example.doodl.util.ValidationUtils
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
-import com.example.doodl.util.ValidationUtils
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -275,7 +273,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     } else {
                         Spacer(modifier = Modifier.width(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight )
+                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight , postTags)
                         }
                     }
 
@@ -292,7 +290,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     } else {
                         Spacer(modifier = Modifier.width(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight, postTags)
                         }
                     }
                 }
@@ -424,14 +422,14 @@ fun ProfileEditPopup(
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
+fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
             val configuration = LocalConfiguration.current
             val maxScreenHeightDp = configuration.screenHeightDp.dp
             val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
             val availableHeight = maxScreenHeight - navBarHeight
 
             var isClicked by remember { mutableStateOf(false) }
-            var clickedPost by remember { mutableStateOf<String?>(null) } // Store the clicked post
+            var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
             Box(
                 modifier = Modifier.fillMaxSize()
             ){
@@ -446,9 +444,9 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
-                                .padding(8.dp)
+                                .padding(7.dp)
                                 .clickable {
-                                    clickedPost = imageUrl
+                                    clickedPost = post
                                     isClicked = true
                                 }
                         ) {
@@ -477,8 +475,8 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                         clickedPost?.let { post ->
                             Box(
                                 modifier = Modifier
-                                    .width(550.dp)
-                                    .height(600.dp)
+                                    .width(600.dp)
+                                    .height(520.dp)
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -489,14 +487,14 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(bottom = 4.dp)
                                     ) {
-                                        RoundImageCard(
-                                            image = R.drawable.profpic8, // Replace with the user's profile pic
-                                            modifier = Modifier
+                                        RoundImageCardFeed(
+                                            url = post.profilePicUrl ?: "",
+                                            Modifier
                                                 .size(48.dp)
                                                 .padding(4.dp)
                                         )
                                         Text(
-                                            text = "Anonymous", //text = post.username ?: "Anonymous"
+                                            text = post.username ?: "Anonymous",
                                             fontWeight = FontWeight.Bold,
                                             color = Color.Black,
                                             modifier = Modifier.padding(start = 8.dp)
@@ -504,11 +502,11 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                                     }
 
                                     Image(
-                                        painter = rememberAsyncImagePainter(model = imageUrls),
+                                        painter = rememberAsyncImagePainter(model = post.imageUrl),
                                         contentDescription = null,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .aspectRatio(0.68f)
+                                            .aspectRatio(0.67f)
                                             .padding(bottom = 8.dp),
                                         contentScale = ContentScale.Crop
                                     )
@@ -563,7 +561,7 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(1.75.dp)
+                        .padding(7.dp)
                         .clickable {
                             clickedPost = post
                             isClicked = true
@@ -610,8 +608,8 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                 clickedPost?.let { post ->
                     Box(
                         modifier = Modifier
-                            .width(550.dp)
-                            .height(600.dp)
+                            .width(600.dp)
+                            .height(525.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -622,9 +620,9 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             ) {
-                                RoundImageCard(
-                                    image = R.drawable.profpic8, // Replace with the user's profile pic
-                                    modifier = Modifier
+                                RoundImageCardFeed(
+                                    url = post.profilePicUrl ?: "",
+                                    Modifier
                                         .size(48.dp)
                                         .padding(4.dp)
                                 )
@@ -641,7 +639,7 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .aspectRatio(0.68f)
+                                    .aspectRatio(0.67f)
                                     .padding(bottom = 8.dp),
                                 contentScale = ContentScale.Crop
                             )
@@ -656,7 +654,7 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                 )
                             }*/
 
-                            val tagsForThisPost = postTags[post.imageUrl] ?: emptyList()
+                            /*val tagsForThisPost = postTags[post.imageUrl] ?: emptyList()
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Start,
@@ -673,7 +671,7 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                         color = Color.Gray
                                     )
                                 }
-                            }
+                            }*/
                         }
                     }
                 }
@@ -693,5 +691,5 @@ fun ProfileLikedPostsPreview() {
         // We can add more here
     )
 
-    ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
+    //ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
 }

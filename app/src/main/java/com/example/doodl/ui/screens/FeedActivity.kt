@@ -26,15 +26,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,8 +52,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -80,15 +77,16 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     val postTags by feedViewModel.postTags.observeAsState(emptyMap())
     val isFetchingPosts by feedViewModel.isFetchingPosts.observeAsState(false)
     // Fetch images once the composable is launched
-    LaunchedEffect(feedViewModel) {
+    /*LaunchedEffect(feedViewModel) {
         feedViewModel.fetchNewestPostsPaginated()
+    }*/
 
     // Use rememberSwipeRefreshState to manage the refresh state
     val refreshState = rememberSwipeRefreshState(isRefreshing = false)
 
     // Fetch images once the composable is launched or when refreshing
     LaunchedEffect(feedViewModel, refreshState.isRefreshing) {
-        feedViewModel.fetchNewestPosts()
+        feedViewModel.fetchNewestPostsPaginated()
         feedViewModel.fetchUserLikedAPost()
         refreshState.isRefreshing = false
     }
@@ -106,28 +104,20 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
         }
     } else {
         // Regular feed view
-        ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
-    }
-
-    SwipeRefresh(
-        state = refreshState,
-        onRefresh = {
-            refreshState.isRefreshing = true
+        SwipeRefresh(
+            state = refreshState,
+            onRefresh = {
+                refreshState.isRefreshing = true
+            }
+        ) {
+            ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
         }
-    ) {
-        ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
     }
 }
 
-}
 
 @Composable
-fun ImageFeed(
-    posts: List<Post>,
-    userLikedPosts: List<String>,
-    postTags: Map<String, List<String>>,
-    feedViewModel: FeedViewModel,
-    navBarHeight: Int) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -157,13 +147,7 @@ fun ImageFeed(
         ) {
             Icon(Icons.Default.Filter, contentDescription = "Filter")
         }
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxHeight()
-                .heightIn(max = maxFeedHeight.dp)
-        ) {
-            itemsIndexed(posts) {index, post ->
-                val isLastItem = index == posts.size - 1
+    }
     // Display a vertical list of images
     LazyColumn(
         modifier = Modifier
@@ -190,7 +174,8 @@ fun ImageFeed(
 fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, context: Context) {
     val isLiked = userLikedPosts.contains(post.postId)
     var applyColorFilter by remember { mutableStateOf(isLiked) }
-    val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
+    val isFollowing =
+        feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
 
     Column(
         modifier = Modifier
@@ -282,13 +267,22 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                                 applyColorFilter = !applyColorFilter
                                 if (applyColorFilter) {
                                     feedViewModel.likePost(post.postId)
-                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT)
+                                        .show()
                                 } else {
                                     feedViewModel.unlikePost(post.postId)
-                                    Toast.makeText(context, "You disliked a post", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "You disliked a post",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             } else {
-                                Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Please wait before liking again.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                 )
