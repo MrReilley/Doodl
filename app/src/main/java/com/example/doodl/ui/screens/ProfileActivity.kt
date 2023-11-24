@@ -73,6 +73,7 @@ import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.EditableTextField
+import com.example.doodl.ui.ReAuthenticateDialog
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.util.ComposableStateUtil
@@ -125,6 +126,10 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showProgressIndicator by remember { mutableStateOf(false) }
+    var showReAuthenticateDialog by remember { mutableStateOf(false) }
+    var canDeleteAccount by remember { mutableStateOf(false) }
+    var reAuthError by remember { mutableStateOf("") }
+
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -217,29 +222,54 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
-                            showDeleteAccountDialog = true
+                            showReAuthenticateDialog = true  // First show the re-authentication dialog
                         }
                 )
+                // Show re-authentication dialog
+                ReAuthenticateDialog(
+                    showDialog = showReAuthenticateDialog,
+                    onDismiss = {
+                        showReAuthenticateDialog = false
+                        reAuthError = ""
+                    },
+                    onReAuthenticate = { password ->
+                        // Perform re-authentication with the provided password
+                        feedViewModel.reAuthenticateUser(password) { isReAuthenticated ->
+                            if (isReAuthenticated) {
+                                canDeleteAccount = true
+                                showDeleteAccountDialog = true
+                                reAuthError = ""
+                            } else {
+                                // failed re-authentication
+                                canDeleteAccount = false
+                                reAuthError = "Re-authentication failed. Please try again."
+                            }
+                        }
+                    },
+                    errorMessage = reAuthError
+                )
 
+                // Confirmation dialog for account deletion
                 ConfirmationDialog(
                     showDialog = showDeleteAccountDialog,
                     onDismiss = { showDeleteAccountDialog = false },
                     title = "Delete Account",
-                    message = "Are you sure you want to delete your account?",
+                    message = "Are you sure you want to delete your account? This action cannot be undone.",
                     onConfirm = {
                         showDeleteAccountDialog = false
-                        showProgressIndicator = true  // Show progress indicator
-                        // Call ViewModel function to handle account deletion
+                        showProgressIndicator = true
                         feedViewModel.deleteAccount(userId) {
                             showProgressIndicator = false
                             if (navController != null) {
-                                logout(navController) // Logout and navigate to login screen
+                                logout(navController)
                             }
                         }
-                        showDeleteAccountDialog = false
-                        // Navigate to login screen or relevant page
                     },
-                    onCancel = { showDeleteAccountDialog = false }
+                    onCancel = {
+                        showDeleteAccountDialog = false
+                        canDeleteAccount = false
+
+                    }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
@@ -255,7 +285,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 } else {
                     // We can show a default image here
                     RoundImageCard(
-                        image = R.drawable.profpic8, // Default or placeholder image
+                        image = R.drawable.profpic8,
                         Modifier
                             .size(115.dp)
                             .padding(5.dp)

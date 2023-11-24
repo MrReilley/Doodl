@@ -302,11 +302,11 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                     onConfirm = {
                         feedViewModel.deletePost(post.postId)
                         showConfirmationDialog = false
-                        showMenu = false // This closes the dropdown menu
+                        showMenu = false
                     },
                     onCancel = {
                         showConfirmationDialog = false
-                        showMenu = false // This closes the dropdown menu
+                        showMenu = false
                     }
                 )
             }

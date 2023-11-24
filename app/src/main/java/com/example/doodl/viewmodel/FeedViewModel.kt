@@ -16,6 +16,8 @@ import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -473,6 +475,15 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 Log.e("FeedViewModel", "Error deleting account: ${e.message}")
             }
         }
+    }
+    fun reAuthenticateUser(password: String, onResult: (Boolean) -> Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val credential = EmailAuthProvider.getCredential(user!!.email!!, password)
+
+        user.reauthenticate(credential)
+            .addOnCompleteListener { task ->
+                onResult(task.isSuccessful)
+            }
     }
 
 }
