@@ -54,7 +54,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
@@ -64,6 +66,9 @@ import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun FeedScreen(userId: String, navBarHeight: Int) {
@@ -143,6 +148,8 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
     val selectedColor = MaterialTheme.colorScheme.tertiary
     var showMenu by remember { mutableStateOf(false) }
     var showConfirmationDialog by remember { mutableStateOf(false) }
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()) }
+    val formattedDate = remember(post.timestamp) { dateFormat.format(Date(post.timestamp)) }
 
     Column(
         modifier = Modifier
@@ -252,46 +259,48 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = {
-                    showMenu = !showMenu
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = "Post Menu",
-                        tint = Color.Black
-                    )
-
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(Color.Black)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Download Doodle", color = selectedColor) },
-                        onClick = { showMenu = false },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Download",
-                                modifier = Modifier.size(20.dp),
-                                tint = selectedColor
-                            )
-                        }
-                    )
-                    if (post.userId == feedViewModel.currentUserID) {
+                Box {
+                    IconButton(
+                        onClick = { showMenu = !showMenu }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "Post Menu",
+                            tint = Color.Black
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        offset = DpOffset(0.dp, 0.dp), // Adjust offset if needed
+                        modifier = Modifier.align(Alignment.BottomStart) // Align to bottom-start of Box
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("Delete Post", color = selectedColor) },
-                            onClick = { showConfirmationDialog = true},
+                            text = { Text("Download Doodle", color = selectedColor) },
+                            onClick = { showMenu = false },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "Download",
                                     modifier = Modifier.size(20.dp),
                                     tint = selectedColor
                                 )
                             }
                         )
+                        if (post.userId == feedViewModel.currentUserID) {
+                            DropdownMenuItem(
+                                text = { Text("Delete Post", color = selectedColor) },
+                                onClick = { showConfirmationDialog = true},
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = selectedColor
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
                 ConfirmationDialog(
@@ -332,6 +341,12 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                     )
                 }
             }
+            Text(
+                text = "Posted on $formattedDate",
+                modifier = Modifier.padding(8.dp),
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
         }
     }
 }
