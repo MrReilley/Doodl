@@ -208,7 +208,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
-                            showReAuthenticateDialog = true  // First show the re-authentication dialog
+                            showReAuthenticateDialog = true
                         }
                 )
                 // Show re-authentication dialog

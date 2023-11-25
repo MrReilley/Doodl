@@ -56,7 +56,7 @@ class Repository {
 
         // Return the Task from the TaskCompletionSource
         return taskCompletionSource.task
-    }//new for profileactivity
+    }
 
     fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String?): Task<Void> {
         val userDocumentRef = db.collection("users").document(userId)
@@ -66,7 +66,7 @@ class Repository {
         )
         newProfilePicPath?.let { updates["profilePicPath"] = it }
         return userDocumentRef.update(updates)
-    }//new for profileactivity
+    }
 
     fun updateUserPostsUsername(userId: String, newUsername: String, newProfilePicPath: String?): Task<Void> {
         val postsQuery = db.collection("posts").whereEqualTo("userId", userId)
@@ -82,7 +82,7 @@ class Repository {
             }
             batch.commit()
         }
-    }//new for profileactivity
+    }
 
     fun getUsername(userId: String): Task<String?> {
         return db.collection("users").document(userId).get().continueWith { task ->
@@ -179,7 +179,7 @@ class Repository {
                 throw task.exception ?: RuntimeException("Error fetching posts")
             }
         }
-    }//added pagination
+    }
 
     fun getImageUrl(imagePath: String): Task<String> {
         val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
@@ -241,7 +241,7 @@ class Repository {
                 val querySnapshot = task.result
                 querySnapshot?.isEmpty ?: true // Username is available if no documents are found
             }
-    }//new for profileactivity
+    }
     fun followUser(followerId: String, followeeId: String): Task<Void> {
         val follow = Follow(followerId, followeeId)
         return db.collection("follows").document().set(follow)
