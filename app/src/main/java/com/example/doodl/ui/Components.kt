@@ -5,7 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
@@ -26,21 +26,26 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -52,12 +57,16 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import java.util.regex.Pattern
+
 // Composable functions for reusable UI components
 
 @Composable
@@ -344,16 +353,15 @@ fun RoundImageCardFeed(
 }
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val isFocused = remember { mutableStateOf(false) }
     Column {
         OutlinedTextField(
             value = text,
             onValueChange = { onTextChanged(it) },
-            label = { Text(text = label)},
+            label = { Text(text = label, color = Color.White)},
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done
             ),
@@ -368,36 +376,120 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 focusedLabelColor = MaterialTheme.colorScheme.tertiary,
                 unfocusedLabelColor = Color.White,
                 cursorColor = MaterialTheme.colorScheme.tertiary,
-                textColor = MaterialTheme.colorScheme.tertiary
-            )
+                textColor = if (isFocused.value) MaterialTheme.colorScheme.tertiary else Color.White
+            ),
+            modifier = Modifier
+                .onFocusChanged { focusState ->
+                    isFocused.value = focusState.isFocused
+                }
+        )
+    }
+}
+@Composable
+fun ConfirmationDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    if (showDialog) {
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { onDismiss() },
+            title = { Text(title, color = Color.White) },
+            text = { Text(message, color = Color.White) },
+            confirmButton = {
+                Button(onClick = onConfirm) {
+                    Text("Yes", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(onClick = onCancel) {
+                    Text("No", color = Color.White)
+                }
+            }
         )
     }
 }
 
 @Composable
-fun ProfilePictureItem(
-    imageResource: Int,
-    isSelected: Boolean,
-    onProfilePictureSelected: () -> Unit
+fun ReAuthenticateDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onReAuthenticate: (String) -> Unit,
+    errorMessage: String
 ) {
-    Box(
-        modifier = Modifier
-            .padding(8.dp)
-            .clickable {
-                onProfilePictureSelected()
+    if (showDialog) {
+        var password by remember { mutableStateOf("") }
+
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { onDismiss() },
+            title = { Text("Re-authenticate", color = Color.White) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Enter your password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                            unfocusedBorderColor = Color.White,
+                            focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                            unfocusedLabelColor = Color.White,
+                            cursorColor = MaterialTheme.colorScheme.tertiary,
+                            textColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                    if (errorMessage.isNotEmpty()) {
+                        Text(
+                            text = errorMessage,
+                            color = Color.Red,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { onReAuthenticate(password) }) {
+                    Text("Confirm", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(onClick = { onDismiss() }) {
+                    Text("Cancel", color = Color.White)
+                }
             }
-    ) {
-        Image(
-            painter = painterResource(id = imageResource),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(100.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(
-                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onBackground
-                )
-                .align(Alignment.Center)
         )
+    }
+}
+@Composable
+fun BlackScreenWithLoadingIndicator(navController: NavController) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 2.dp
+        )
+
+        // LaunchedEffect for delayed navigation
+        LaunchedEffect(Unit) {
+            delay(2000L)
+            navController.navigate("loginScreen") {
+                popUpTo("loginScreen") { inclusive = false }
+                launchSingleTop = true
+            }
+        }
     }
 }

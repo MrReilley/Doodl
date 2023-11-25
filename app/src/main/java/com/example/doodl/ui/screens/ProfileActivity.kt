@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -70,13 +71,15 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.EditableTextField
+import com.example.doodl.ui.ReAuthenticateDialog
 import com.example.doodl.ui.RoundImageCard
 import com.example.doodl.ui.logout
 import com.example.doodl.util.ComposableStateUtil
+import com.example.doodl.util.ValidationUtils
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
-import com.example.doodl.util.ValidationUtils
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -120,6 +123,12 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             )
         }
     }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showReAuthenticateDialog by remember { mutableStateOf(false) }
+    var canDeleteAccount by remember { mutableStateOf(false) }
+    var reAuthError by remember { mutableStateOf("") }
+
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -147,7 +156,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         color = Color.White
                     )
                 }
-                //Spacer(modifier = Modifier.width(155.dp))
                 Spacer(modifier = Modifier.weight(1f)) // Flexible spacer to push content to sides
                 userName?.let {
                     ProfileEditPopup(
@@ -168,7 +176,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         viewModel = feedViewModel
                     )
                 }
-                //Spacer(modifier = Modifier.weight(0.002f))
+                // Logout Account Icon
                 Spacer(modifier = Modifier.width(15.dp))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
@@ -176,10 +184,76 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
-                            if (navController != null) {
-                                logout(navController)
+                            showLogoutDialog = true
+                        }
+                )
+                ConfirmationDialog(
+                    showDialog = showLogoutDialog,
+                    onDismiss = { showLogoutDialog = false },
+                    title = "Logout",
+                    message = "Are you sure you want to log out?",
+                    onConfirm = {
+                        if (navController != null) {
+                            logout(navController)
+                        }
+                        showLogoutDialog = false
+                    },
+                    onCancel = { showLogoutDialog = false }
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+                // Delete Account Icon
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Account",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable {
+                            showReAuthenticateDialog = true
+                        }
+                )
+                // Show re-authentication dialog
+                ReAuthenticateDialog(
+                    showDialog = showReAuthenticateDialog,
+                    onDismiss = {
+                        showReAuthenticateDialog = false
+                        reAuthError = ""
+                    },
+                    onReAuthenticate = { password ->
+                        // Perform re-authentication with the provided password
+                        feedViewModel.reAuthenticateUser(password) { isReAuthenticated ->
+                            if (isReAuthenticated) {
+                                canDeleteAccount = true
+                                showReAuthenticateDialog = false
+                                showDeleteAccountDialog = true
+                                reAuthError = ""
+                            } else {
+                                // failed re-authentication
+                                canDeleteAccount = false
+                                reAuthError = "Re-authentication failed. Please try again."
                             }
                         }
+                    },
+                    errorMessage = reAuthError
+                )
+
+                // Confirmation dialog for account deletion
+                ConfirmationDialog(
+                    showDialog = showDeleteAccountDialog,
+                    onDismiss = { showDeleteAccountDialog = false },
+                    title = "Delete Account",
+                    message = "Are you sure you want to delete your account? This action cannot be undone.",
+                    onConfirm = {
+                        showDeleteAccountDialog = false
+                        navController?.navigate("deleteAccountLoading")
+                        feedViewModel.deleteAccount(userId) {
+
+                        }
+                    },
+                    onCancel = {
+                        showDeleteAccountDialog = false
+                        canDeleteAccount = false
+
+                    }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
@@ -195,7 +269,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 } else {
                     // We can show a default image here
                     RoundImageCard(
-                        image = R.drawable.profpic8, // Default or placeholder image
+                        image = R.drawable.profpic8,
                         Modifier
                             .size(115.dp)
                             .padding(5.dp)
@@ -369,7 +443,7 @@ fun ProfileEditPopup(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     EditableTextField(
-                        label = "Biography",
+                        label = "Bio",
                         text = newBio,
                         onTextChanged = { newBio = it }
                     )

@@ -20,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.BlackScreenWithLoadingIndicator
 import com.example.doodl.ui.BottomNavigationBar
 import com.example.doodl.ui.screens.CanvasScreen
 import com.example.doodl.ui.screens.FeedScreen
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
                                 Log.d("MainActivity", "Navigating to canvas")
                                 CanvasScreen(navController, navBarHeight, canvasViewModel) }
                             composable("postInfo") { PostInfoScreen(navController, canvasViewModel) }
+                            composable("deleteAccountLoading") { BlackScreenWithLoadingIndicator(navController) }
                             composable("feed") {
                                 Log.d("MainActivity", "Navigating to feed")
                                 val userId = FirebaseAuth.getInstance().currentUser?.uid

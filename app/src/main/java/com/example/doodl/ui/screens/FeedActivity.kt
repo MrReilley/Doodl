@@ -21,13 +21,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,8 +53,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,6 +60,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -133,6 +139,10 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
     val isLiked = userLikedPosts.contains(post.postId)
     var applyColorFilter by remember { mutableStateOf(isLiked) }
     val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
+    val unselectedColor = MaterialTheme.colorScheme.primary
+    val selectedColor = MaterialTheme.colorScheme.tertiary
+    var showMenu by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -166,16 +176,21 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                                 feedViewModel.unfollowUser(post.userId)
                             } else {
                                 feedViewModel.followUser(post.userId)
-                            }// Might need to add a cooldown similar to likes
+                            }
+                            // We might want to add a cooldown here, similar to the like functionality
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = if (isFollowing) selectedColor else unselectedColor
                         ),
                         modifier = Modifier.padding(4.dp)
                     ) {
-                        Text(if (isFollowing) "Unfollow" else "Follow", color = Color.White)
+                        Text(
+                            text = if (isFollowing) "Unfollow" else "Follow",
+                            color = if (isFollowing) Color.Black else  Color.White
+                        )
                     }
                 }
+
             }
 
             // Post image
@@ -201,7 +216,7 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 }
             }
 
-            // Like button and tags
+            // Like button and kebab menu
             Row(
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -236,9 +251,64 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                 )
                 Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = {
+                    showMenu = !showMenu
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Post Menu",
+                        tint = Color.Black
+                    )
 
-                // We can place the download icon & logic here
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(Color.Black)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Download Doodle", color = selectedColor) },
+                        onClick = { showMenu = false },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "Download",
+                                modifier = Modifier.size(20.dp),
+                                tint = selectedColor
+                            )
+                        }
+                    )
+                    if (post.userId == feedViewModel.currentUserID) {
+                        DropdownMenuItem(
+                            text = { Text("Delete Post", color = selectedColor) },
+                            onClick = { showConfirmationDialog = true},
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = selectedColor
+                                )
+                            }
+                        )
+                    }
+                }
+                ConfirmationDialog(
+                    showDialog = showConfirmationDialog,
+                    onDismiss = { showConfirmationDialog = false },
+                    title = "Delete Post",
+                    message = "Are you sure you want to delete this post?",
+                    onConfirm = {
+                        feedViewModel.deletePost(post.postId)
+                        showConfirmationDialog = false
+                        showMenu = false
+                    },
+                    onCancel = {
+                        showConfirmationDialog = false
+                        showMenu = false
+                    }
+                )
             }
 
             // Displaying tags

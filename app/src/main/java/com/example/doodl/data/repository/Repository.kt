@@ -56,7 +56,7 @@ class Repository {
 
         // Return the Task from the TaskCompletionSource
         return taskCompletionSource.task
-    }//new for profileactivity
+    }
 
     fun updateUserProfile(userId: String, newUsername: String, newBio: String, newProfilePicPath: String?): Task<Void> {
         val userDocumentRef = db.collection("users").document(userId)
@@ -66,7 +66,7 @@ class Repository {
         )
         newProfilePicPath?.let { updates["profilePicPath"] = it }
         return userDocumentRef.update(updates)
-    }//new for profileactivity
+    }
 
     fun updateUserPostsUsername(userId: String, newUsername: String, newProfilePicPath: String?): Task<Void> {
         val postsQuery = db.collection("posts").whereEqualTo("userId", userId)
@@ -82,7 +82,7 @@ class Repository {
             }
             batch.commit()
         }
-    }//new for profileactivity
+    }
 
     fun getUsername(userId: String): Task<String?> {
         return db.collection("users").document(userId).get().continueWith { task ->
@@ -179,7 +179,7 @@ class Repository {
                 throw task.exception ?: RuntimeException("Error fetching posts")
             }
         }
-    }//added pagination
+    }
 
     fun getImageUrl(imagePath: String): Task<String> {
         val storageRef = FirebaseStorage.getInstance().getReference(imagePath)
@@ -241,7 +241,7 @@ class Repository {
                 val querySnapshot = task.result
                 querySnapshot?.isEmpty ?: true // Username is available if no documents are found
             }
-    }//new for profileactivity
+    }
     fun followUser(followerId: String, followeeId: String): Task<Void> {
         val follow = Follow(followerId, followeeId)
         return db.collection("follows").document().set(follow)
@@ -268,6 +268,107 @@ class Repository {
                 task.isSuccessful && task.result?.documents?.isNotEmpty() == true
             }
     }
+    fun deletePost(postId: String): Task<Void> {
+        val postDocumentRef = db.collection("posts").document(postId)
+
+        // Get the post document to retrieve the imagePath
+        return postDocumentRef.get().continueWithTask { task ->
+            val imagePath = task.result?.getString("imagePath")
+
+            // Start a batch write
+            val batch = db.batch()
+
+            // Delete the post document
+            batch.delete(postDocumentRef)
+
+            // Delete likes, this is a simple approach. Might need to change for larger scale.
+            return@continueWithTask db.collection("Likes").whereEqualTo("postId", postId).get()
+                .continueWithTask { likesTask ->
+                    for (document in likesTask.result) {
+                        batch.delete(document.reference)
+                    }
+                    batch.commit()
+                }.continueWithTask {
+                    // Delete the image from Firebase Storage
+                    if (imagePath != null) {
+                        FirebaseStorage.getInstance().getReference(imagePath).delete()
+                    } else {
+                        Tasks.forException<Void>(Exception("Image path not found"))
+                    }
+                }
+        }
+    }
+    fun deleteUserAccount(userId: String): Task<Void> {
+        // Helper function to handle batch deletion of documents
+        fun deleteDocuments(task: Task<QuerySnapshot>): Task<Void> {
+            val batch = db.batch()
+            for (document in task.result.documents) {
+                batch.delete(document.reference)
+            }
+            return batch.commit()
+        }
+
+        // Special handling for the 'follows' collection
+        fun deleteFollows(): Task<Void> {
+            val followerTask = db.collection("follows")
+                .whereEqualTo("followerId", userId)
+                .get()
+                .continueWithTask { deleteDocuments(it) }
+
+            val followeeTask = db.collection("follows")
+                .whereEqualTo("followeeId", userId)
+                .get()
+                .continueWithTask { deleteDocuments(it) }
+
+            return Tasks.whenAll(followerTask, followeeTask)
+        }
+
+        // Delete user's posts and associated images
+        val deletePostsTask = db.collection("posts").whereEqualTo("userId", userId).get()
+            .continueWithTask { task ->
+                val deleteImageTasks = mutableListOf<Task<Void>>()
+                val postsBatch = db.batch()  // New WriteBatch instance
+
+                for (post in task.result.documents) {
+                    val imagePath = post.getString("imagePath")
+                    imagePath?.let {
+                        deleteImageTasks.add(storageReference.child(it).delete())
+                    }
+                    postsBatch.delete(post.reference)  // Use the new batch instance
+                }
+
+                // Combine image deletion tasks with post deletion
+                Tasks.whenAll(deleteImageTasks).continueWithTask {
+                    postsBatch.commit()  // Commit the batch operation for deleting posts
+                }
+            }
+
+        // Delete likes
+        val deleteLikesTask = db.collection("Likes").whereEqualTo("userId", userId).get()
+            .continueWithTask { deleteDocuments(it) }
+
+        // Delete profile pictures
+        val deleteProfilePicsTask = storageReference.child("user/$userId/profilepic").listAll()
+            .continueWithTask { listResult ->
+                val deleteTasks = listResult.result.items.map { it.delete() }
+                Tasks.whenAll(deleteTasks)
+            }
+
+        // Delete follows (both follower and followee)
+        val deleteFollowsTask = deleteFollows()
+
+        // Task to delete the user document from the 'users' collection
+        val deleteUserDocumentTask = db.collection("users").document(userId).delete()
+
+        // Combine all tasks and then delete the user from Firebase Authentication
+        return Tasks.whenAll(deletePostsTask, deleteLikesTask, deleteFollowsTask, deleteProfilePicsTask, deleteUserDocumentTask)
+            .continueWithTask {
+                val user = FirebaseAuth.getInstance().currentUser
+                user?.delete() ?: Tasks.forException(Exception("No authenticated user found"))
+            }
+    }
+
+
 
 }
 
