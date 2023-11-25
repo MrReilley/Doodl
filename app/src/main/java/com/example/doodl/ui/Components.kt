@@ -1,5 +1,8 @@
 package com.example.doodl.ui
 
+
+
+import android.graphics.DashPathEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -49,6 +52,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -63,6 +67,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.ui.screens.BrushType
+import com.example.doodl.ui.screens.Quadruple
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import java.util.regex.Pattern
@@ -71,31 +77,71 @@ import java.util.regex.Pattern
 
 @Composable
 fun drawCanvas(
-    paths: List<Triple<List<Offset>, Color, Float>>,
+    paths: List<Quadruple<List<Offset>, Color, Float, BrushType>>,
     currentPath: List<Offset>,
     selectedColor: Color,
-    brushSize: Float
+    brushSize: Float,
+    selectedBrushType: BrushType
 ) {
     Canvas(Modifier.fillMaxSize()) {
         drawRect(color = Color.White, size = size)
         // Redraws previous canvas paths user has completed drawing to ensure all paths reappear if UI updates
         // For each path in paths, spilt it into offsets, Color
-        paths.forEach { (offsets, color, pathBrushSize) ->
+        paths.forEach { (offsets, color, pathBrushSize, brushType) ->
             val graphicalPath = Path().apply {
                 // Sets start point to first offset in list
                 moveTo(offsets.first().x, offsets.first().y)
                 // For each offset in path, draw a line to the next point
                 offsets.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(
-                path = graphicalPath,
-                color = color,
-                style = Stroke(
-                    width = pathBrushSize,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-            )
+
+            // Configure paint style based on brushType
+            when (brushType) {
+                BrushType.NORMAL -> {
+                    drawPath(
+                        path = graphicalPath,
+                        color = color,
+                        style = Stroke(
+                            width = pathBrushSize,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                }
+
+                BrushType.DASHED -> {
+                    val dotLength = pathBrushSize * 0.2f // Small length for dot
+                    val gapLength = pathBrushSize * 2// Gap equal to brush size
+                    drawPath(
+                        path = graphicalPath,
+                        color = color,
+                        style = Stroke(
+                            width = pathBrushSize,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(
+                                    dotLength,
+                                    gapLength
+                                )
+                            )
+                        )
+                    )
+                }
+
+                BrushType.SQUARE -> {
+                    drawPath(
+                        path = graphicalPath,
+                        color = color,
+                        style = Stroke(
+                            width = pathBrushSize,
+                            cap = StrokeCap.Square,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                }
+            }
+
         }
         // Draws canvas path currently being drawn if there is an active path
         if (currentPath.isNotEmpty()) {
@@ -105,14 +151,37 @@ fun drawCanvas(
                 // For each offset in currentPath, draw a line to the next point
                 currentPath.forEach { lineTo(it.x, it.y) }
             }
-            drawPath(
-                path = activeGraphicalPath,
-                color = selectedColor,
-                style = Stroke(
+
+            val activePathStyle = when (selectedBrushType) {
+                BrushType.NORMAL -> Stroke(
                     width = brushSize,
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round
                 )
+
+                BrushType.DASHED -> {
+                    val dotLength = brushSize * 0.2f // Length of the dot, significantly shorter than the brush size
+                    val gapLength = brushSize * 2 // Gap length, adjusted to ensure the total of dot and gap equals brush size
+                    Stroke(
+                        width = brushSize,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(dotLength, gapLength))
+                    )
+                }
+
+                BrushType.SQUARE -> Stroke(
+                    width = brushSize,
+                    cap = StrokeCap.Square,
+                    join = StrokeJoin.Bevel
+                )
+                // Add other brush types here if needed
+            }
+
+            drawPath(
+                path = activeGraphicalPath,
+                color = selectedColor,
+                style = activePathStyle
             )
         }
     }

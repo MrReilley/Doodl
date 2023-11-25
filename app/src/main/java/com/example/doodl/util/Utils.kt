@@ -1,20 +1,30 @@
 package com.example.doodl.util
 
 import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
 import android.view.MotionEvent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import android.graphics.Paint
 import android.graphics.Canvas
+import android.graphics.DashPathEffect
+import android.graphics.DiscretePathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import com.example.doodl.ui.screens.BrushType
+import com.example.doodl.ui.screens.Quadruple
 
 // Reusable utility functions like date formatting, string manipulation, or other helper functions
 // not tied to specific feature or component
 
 fun handleDrawingActivityTouchEvent(event: MotionEvent,
                                     currentPath: MutableList<Offset>,
-                                    paths: MutableList<Triple<List<Offset>, Color, Float>>,
+                                    paths: MutableList<Quadruple<List<Offset>, Color, Float, BrushType>>,
                                     selectedColor: Color,
-                                    brushSize: Float): Boolean {
+                                    brushSize: Float,
+                                    selectedBrushType: BrushType
+): Boolean {
     val touchAction = event.action
     val touchActionCoordinates = Offset(event.x, event.y)
 
@@ -32,7 +42,7 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
                 // If it's a single point (a dot), duplicate the point to make it a "path"
                 currentPath.add(Offset(event.x + 1e-5f, event.y + 1e-5f)) // tiny offset to make it a line
             }
-            paths.add(Triple(currentPath.toList(), selectedColor, brushSize))
+            paths.add(Quadruple(currentPath.toList(), selectedColor, brushSize, selectedBrushType))
             currentPath.clear()
             true
         }
@@ -41,7 +51,7 @@ fun handleDrawingActivityTouchEvent(event: MotionEvent,
     }
 }
 
-fun generateBitmapFromPaths(paths: List<Triple<List<Offset>, Color, Float>>,
+fun generateBitmapFromPaths(paths: List<Quadruple<List<Offset>, Color, Float, BrushType>>,
                             canvasWidth: Int,
                             canvasHeight: Int): Bitmap {
     // Create empty bitmap with given dimensions and color format
@@ -60,18 +70,35 @@ fun generateBitmapFromPaths(paths: List<Triple<List<Offset>, Color, Float>>,
     // Create paint object for drawing paths
     val drawingPaint = Paint()
     drawingPaint.isAntiAlias = true
-    drawingPaint.strokeCap = Paint.Cap.ROUND
-    drawingPaint.strokeJoin = Paint.Join.ROUND
 
     // A path is a series of connected lines formed by multiple points
     for (path in paths) {
         // Get color and points from current path
-        val (coordinates, pathColor, pathBrushSize) = path
+        val (coordinates, pathColor, pathBrushSize, brushType) = path
 
         // Set paint object's color, stroke width, and style properties
         drawingPaint.color = android.graphics.Color.rgb(pathColor.red, pathColor.green, pathColor.blue)
         drawingPaint.strokeWidth = pathBrushSize
-        drawingPaint.style = Paint.Style.STROKE
+
+        when (brushType) {
+            BrushType.NORMAL -> {
+                drawingPaint.strokeCap = Paint.Cap.ROUND
+                drawingPaint.strokeJoin = Paint.Join.ROUND
+                drawingPaint.pathEffect = null
+            }
+            BrushType.DASHED -> {
+                val dashLength = pathBrushSize * 2 // Scale with brush size
+                val gapLength = pathBrushSize
+                drawingPaint.strokeCap = Paint.Cap.ROUND
+                drawingPaint.strokeJoin = Paint.Join.ROUND
+                drawingPaint.pathEffect = DashPathEffect(floatArrayOf(dashLength, gapLength), 0f)
+            }
+            BrushType.SQUARE -> {
+                drawingPaint.strokeCap = Paint.Cap.SQUARE
+                drawingPaint.strokeJoin = Paint.Join.ROUND
+                drawingPaint.pathEffect = null
+            }
+        }
 
         // Loop through list of coordinates, starting from second point (i=1)
             // i.e. path = [point1, point2, point3, point4]
@@ -88,6 +115,8 @@ fun generateBitmapFromPaths(paths: List<Triple<List<Offset>, Color, Float>>,
             // Draw line from start point to end point on canvas
             canvasToDraw.drawLine(startX, startY, endX, endY, drawingPaint)
         }
+        drawingPaint.pathEffect = null
+        drawingPaint.maskFilter = null
     }
     return outputBitmap
 }

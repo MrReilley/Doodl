@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.screens.BrushType
+import com.example.doodl.ui.screens.Quadruple
 import com.google.firebase.auth.FirebaseAuth
 import java.io.ByteArrayOutputStream
 import java.util.UUID
@@ -24,7 +26,7 @@ import java.util.UUID
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
     val currentBitmap: MutableLiveData<Bitmap?> = MutableLiveData(null)
-    var canvasPaths: MutableLiveData<MutableList<Triple<List<Offset>, Color, Float>>> = MutableLiveData(mutableListOf())
+    var canvasPaths: MutableLiveData<MutableList<Quadruple<List<Offset>, Color, Float, BrushType>>> = MutableLiveData(mutableListOf())
 
     fun clearCanvasPaths() {
         canvasPaths.value = mutableListOf()

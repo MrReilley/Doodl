@@ -24,6 +24,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
@@ -31,6 +33,7 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,6 +76,14 @@ import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 
 // Composable functions for UI of each screen
+enum class BrushType(val brushName: String) {
+    NORMAL("Normal"),
+    DASHED("Dashed"),
+    SQUARE("Square"),
+}
+
+data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 @Composable
 fun CanvasScreen(
     navController: NavController,
@@ -83,6 +94,7 @@ fun CanvasScreen(
         // Do nothing, effectively disabling the back button
     }
     var selectedColor by remember { mutableStateOf(Color.Black) }
+    var selectedBrushType by remember { mutableStateOf(BrushType.NORMAL) }
     val pathsState = canvasViewModel.canvasPaths.observeAsState()
     val paths = remember { pathsState.value ?: mutableStateListOf() }
     LaunchedEffect(paths) {
@@ -95,6 +107,8 @@ fun CanvasScreen(
         navBarHeight = navBarHeight,
         selectedColor = selectedColor,
         updateSelectedColor = { newColor -> selectedColor = newColor },
+        selectedBrushType = selectedBrushType,
+        updateSelectedBrushType = { newBrushType -> selectedBrushType = newBrushType },
         paths = paths
     )
 }
@@ -106,7 +120,9 @@ fun CanvasActivity(
     navBarHeight: Int,
     selectedColor: Color,
     updateSelectedColor: (Color) -> Unit,
-    paths: MutableList<Triple<List<Offset>, Color, Float>>
+    selectedBrushType: BrushType,
+    updateSelectedBrushType: (BrushType) -> Unit,
+    paths: MutableList<Quadruple<List<Offset>, Color, Float, BrushType>>
 ) {
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
@@ -127,6 +143,8 @@ fun CanvasActivity(
         button4Color to "button4Color",
         button5Color to "button5Color"
     )
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+    val buttonSize = remember { mutableStateOf(IntSize.Zero) }
 
     var selectedButtonId by remember { mutableStateOf("") }
     val updateSelectedButtonId: (String) -> Unit = { newId ->
@@ -176,6 +194,32 @@ fun CanvasActivity(
                     }
                 }) {
                     Icon(Icons.Default.Delete, contentDescription = "New Canvas")
+                }
+                Box {
+                    IconButton(
+                        onClick = { isDropdownExpanded = true }
+                    ) {
+                        Icon(Icons.Default.Brush, contentDescription = "Brush Type")
+                    }
+
+                    DropdownMenu(
+                        expanded = isDropdownExpanded,
+                        onDismissRequest = { isDropdownExpanded = false },
+                        offset = DpOffset(0.dp, 0.dp), // Adjust offset if needed
+                        modifier = Modifier.align(Alignment.BottomStart) // Align to bottom-start of Box
+                    ) {
+                        BrushType.values().forEach { brushType ->
+                            DropdownMenuItem(onClick = {
+                                updateSelectedBrushType(brushType)
+                                isDropdownExpanded = false
+                            }) {
+                                Text(
+                                    text = brushType.brushName,
+                                    color = Color.Black
+                                ) // Black text color
+                            }
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -270,12 +314,13 @@ fun CanvasActivity(
                             currentPath,
                             paths,
                             selectedColor,
-                            brushSize
+                            brushSize,
+                            selectedBrushType
                         )
                     }
             ) {
                 // Draw the canvas using paths captured from touch event handler
-                drawCanvas(paths, currentPath, selectedColor, brushSize)
+                drawCanvas(paths, currentPath, selectedColor, brushSize, selectedBrushType)
             }
             // Color Picker
             if (isColorPickerVisible.value) {
@@ -348,6 +393,14 @@ fun CanvasActivity(
             }
         }
     }
+}
+
+private fun <E> MutableList<E>.add(element: Triple<List<Offset>, Color, Float>) {
+
+}
+
+private fun <T> SnapshotStateList<T>.add(element: Quadruple<List<Offset>, Color, Float, BrushType>) {
+
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
