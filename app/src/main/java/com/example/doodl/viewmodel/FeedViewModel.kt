@@ -16,6 +16,8 @@ import coil.transform.CircleCropTransformation
 import com.example.doodl.data.Like
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +46,6 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     private val _isFetchingPosts = MutableLiveData<Boolean>(false)
     private val _isFetchingUserPosts = MutableLiveData<Boolean>(false)
     private val _isFetchingLikedPosts = MutableLiveData<Boolean>(false)
-    //private val _isFollowingUser = MutableLiveData<Boolean>()
     private val _followStatusMap = MutableLiveData<Map<String, Boolean>>().apply { value = emptyMap() }
 
     val newestPosts: LiveData<List<Post>> get() = _newestPosts
@@ -58,7 +59,6 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
     val isFetchingPosts: LiveData<Boolean> = _isFetchingPosts
     val isFetchingUserPosts: LiveData<Boolean> = _isFetchingUserPosts
     val isFetchingLikedPosts: LiveData<Boolean> = _isFetchingLikedPosts
-    //val isFollowingUser: LiveData<Boolean> = _isFollowingUser
     val followStatusMap: LiveData<Map<String, Boolean>> = _followStatusMap
 
 
@@ -141,7 +141,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 profilePic.value = null
             }
         }
-    }//modified for profile showing profile pic
+    }
 
     fun fetchNewestPostsPaginated() {
         if (_isFetchingPosts.value == true) return
@@ -346,7 +346,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 Log.e("FeedViewModel", "Error updating user information: ${exception.message}")
             }
         }
-    } //new
+    }
 
     fun updateProfileWithImageUrl(newUsername: String, newBio: String, imageUrl: String) {
         Log.d("FeedViewModel", "Updating profile with image URL - started")
@@ -383,7 +383,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 onResult(false) // Assume unavailable on error
             }
         }
-    }//new
+    }
 
     suspend fun processImage(uri: Uri, context: Context): ByteArray? {
         return withContext(Dispatchers.IO) {
@@ -452,6 +452,38 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
             }
         }
     }
+    fun deletePost(postId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deletePost(postId).await()
+                // Remove the post from the list and update LiveData
+                val updatedPosts = _newestPosts.value?.filterNot { it.postId == postId }
+                _newestPosts.value = updatedPosts
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error deleting post: ${e.message}")
+            }
+        }
+    }
+    fun deleteAccount(userId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteUserAccount(userId).await()
+                onComplete() // Call the completion lambda after successful account deletion
+            } catch (e: Exception) {
+                Log.e("FeedViewModel", "Error deleting account: ${e.message}")
+            }
+        }
+    }
+    fun reAuthenticateUser(password: String, onResult: (Boolean) -> Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val credential = EmailAuthProvider.getCredential(user!!.email!!, password)
+
+        user.reauthenticate(credential)
+            .addOnCompleteListener { task ->
+                onResult(task.isSuccessful)
+            }
+    }
+
 }
 
 
