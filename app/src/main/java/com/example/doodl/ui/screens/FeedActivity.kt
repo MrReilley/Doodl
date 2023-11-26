@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material3.Button
@@ -35,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +57,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.FilterDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -76,10 +75,6 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
     val postTags by feedViewModel.postTags.observeAsState(emptyMap())
     val isFetchingPosts by feedViewModel.isFetchingPosts.observeAsState(false)
-    // Fetch images once the composable is launched
-    /*LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchNewestPostsPaginated()
-    }*/
 
     // Use rememberSwipeRefreshState to manage the refresh state
     val refreshState = rememberSwipeRefreshState(isRefreshing = false)
@@ -125,8 +120,8 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
     val maxFeedHeight = screenHeightDp - navBarHeight
     var showFilterDialog by remember { mutableStateOf(false) }
 
-    // Display a vertical list of images, filling the available space
     Column {
+        // Show filter dialog at the top
         if (showFilterDialog) {
             FilterDialog(
                 tags = postTags.values.flatten().distinct(),
@@ -139,35 +134,38 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 onDismissRequest = { showFilterDialog = false }
             )
         }
+
+        // Display filter button
         IconButton(
             onClick = { showFilterDialog = true },
             modifier = Modifier
-                .align(Alignment.End)
-                .padding(16.dp)
+                .align(Alignment.CenterHorizontally)
+                .padding(10.dp)
         ) {
             Icon(Icons.Default.Filter, contentDescription = "Filter")
         }
-    }
-    // Display a vertical list of images
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxHeight()
-            .heightIn(max = maxFeedHeight.dp)
-    ) {
-        itemsIndexed(posts) { index, post ->
-            val isLastItem = index == posts.lastIndex
+        // Display a vertical list of images
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxHeight()
+                .heightIn(max = maxFeedHeight.dp)
+        ) {
+            itemsIndexed(posts) { index, post ->
+                val isLastItem = index == posts.lastIndex
 
-            PostItem(post, userLikedPosts, postTags, feedViewModel, context)
+                PostItem(post, userLikedPosts, postTags, feedViewModel, context)
 
-            if (isLastItem) {
-                // Trigger loading more posts when the last post is displayed
-                LaunchedEffect(key1 = Unit) {
-                    feedViewModel.fetchNewestPostsPaginated()
+                if (isLastItem) {
+                    // Trigger loading more posts when the last post is displayed
+                    LaunchedEffect(key1 = Unit) {
+                        feedViewModel.fetchNewestPostsPaginated()
+                    }
+                    Spacer(modifier = Modifier.height(65.dp))
                 }
-                Spacer(modifier = Modifier.height(65.dp))
             }
         }
     }
+
 }
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -317,59 +315,3 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
         }
     }
 }
-            @Composable
-            fun FilterDialog(
-                tags: List<String>,
-                selectedTags: MutableList<String>,
-                onFilterSelected: (List<String>) -> Unit,
-                onDismissRequest: () -> Unit
-            ) {
-                var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableList()) }
-
-                AlertDialog(
-                    onDismissRequest = {
-                        // Save the selected tags when the dialog is dismissed
-                        onFilterSelected(selectedTagsState)
-                        onDismissRequest()
-                    },
-                    title = {
-                        Text("Filter by Tags")
-                    },
-                    buttons = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = {
-                                // Reset selected tags to an empty list
-                                selectedTagsState = mutableListOf()
-                            }) {
-                                Text("Clear All")
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            TextButton(onClick = {
-                                // Save the selected tags and dismiss the dialog
-                                onFilterSelected(selectedTagsState)
-                                onDismissRequest()
-                            }) {
-                                Text("Apply")
-                            }
-                        }
-                    },
-                    text = {
-                        // Display checkboxes for each tag
-                        tags.forEach { tag ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
-                            ) {
-                                TagButton(tag, selectedTagsState)
-                            }
-                        }
-                    }
-                )
-            }

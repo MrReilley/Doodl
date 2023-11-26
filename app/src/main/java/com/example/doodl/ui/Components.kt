@@ -7,14 +7,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.OutlinedTextField
@@ -31,10 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.ui.screens.TagButton
 import com.google.firebase.auth.FirebaseAuth
 import java.util.regex.Pattern
 // Composable functions for reusable UI components
@@ -400,4 +409,61 @@ fun ProfilePictureItem(
                 .align(Alignment.Center)
         )
     }
+}
+
+@Composable
+fun FilterDialog(
+    tags: List<String>,
+    selectedTags: MutableList<String>,
+    onFilterSelected: (List<String>) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableList()) }
+
+    AlertDialog(
+        onDismissRequest = {
+            // Save the selected tags when the dialog is dismissed
+            onFilterSelected(selectedTagsState)
+            onDismissRequest()
+        },
+        title = {
+            Text("Filter by Tags", color = Color.Black)
+        },
+        buttons = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = {
+                    // Reset selected tags to an empty list
+                    selectedTagsState = mutableListOf()
+                }) {
+                    Text("Clear All")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = {
+                    // Save the selected tags and dismiss the dialog
+                    onFilterSelected(selectedTagsState)
+                    onDismissRequest()
+                }) {
+                    Text("Apply")
+                }
+            }
+        },
+        text = {
+            // Display checkboxes for each tag
+            tags.forEach { tag ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    TagButton(tag, selectedTagsState)
+                }
+            }
+        }
+    )
 }
