@@ -157,7 +157,8 @@ class Repository {
     }
 
     fun savePostToFirestore(post: Post): Task<Void> {
-        return db.collection("posts").document(post.postId).set(post)
+        val updatedPost = post.copy(timestamp = System.currentTimeMillis())
+        return db.collection("posts").document(post.postId).set(updatedPost)
     }
     fun getNewestPosts(startAfter: DocumentSnapshot? = null, limit: Long = 3): Task<List<Post>> {
         var query = db.collection("posts")
