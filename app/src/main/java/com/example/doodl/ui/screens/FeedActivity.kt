@@ -25,17 +25,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,8 +61,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.FilterDialog
 import com.example.doodl.ui.ConfirmationDialog
+import com.example.doodl.ui.FilterDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
@@ -142,12 +140,13 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
             )
         }
 
+
         // Display filter button
         IconButton(
             onClick = { showFilterDialog = true },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(10.dp)
+                .padding(5.dp)
         ) {
             Icon(Icons.Default.Filter, contentDescription = "Filter")
         }

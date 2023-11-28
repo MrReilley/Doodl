@@ -13,14 +13,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.OutlinedTextField
@@ -63,10 +66,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
@@ -483,7 +489,9 @@ fun ReAuthenticateDialog(
 @Composable
 fun BlackScreenWithLoadingIndicator(navController: NavController) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
@@ -508,54 +516,64 @@ fun FilterDialog(
     tags: List<String>,
     selectedTags: MutableList<String>,
     onFilterSelected: (List<String>) -> Unit,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var selectedTagsState by remember { mutableStateOf(selectedTags.toMutableList()) }
+    // Adjust these values to change the dialog size
+    val dialogWidth = 500.dp
+    val dialogHeight = 600.dp
 
-    AlertDialog(
-        onDismissRequest = {
-            // Save the selected tags when the dialog is dismissed
-            onFilterSelected(selectedTagsState)
-            onDismissRequest()
-        },
-        title = {
-            Text("Filter by Tags", color = Color.Black)
-        },
-        buttons = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = {
-                    // Reset selected tags to an empty list
-                    selectedTagsState = mutableListOf()
-                }) {
-                    Text("Clear All")
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            dismissOnClickOutside = true,
+            dismissOnBackPress = true
+        )
+    ) {
+        Box(
+            modifier = modifier
+                .size(width = dialogWidth, height = dialogHeight)
+                .background(Color.White)
+                .padding(16.dp)
+        ) {
+            Column {
+                Text("Filter by Tags", fontWeight = FontWeight.Bold, color = Color.Black)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Display checkboxes for each tag
+                LazyVerticalGrid(columns = GridCells.Fixed(3)){
+                    items(tags) { tag ->
+                        TagButton(tag, selectedTags)
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = {
-                    // Save the selected tags and dismiss the dialog
-                    onFilterSelected(selectedTagsState)
-                    onDismissRequest()
-                }) {
-                    Text("Apply")
-                }
-            }
-        },
-        text = {
-            // Display checkboxes for each tag
-            tags.forEach { tag ->
+                /*tags.forEach { tag ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        TagButton(tag, selectedTags)
+                    }
+                }*/
+
+                // Buttons for clearing and applying filters
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    TagButton(tag, selectedTagsState)
+                    TextButton(onClick = {
+                        selectedTags.clear()
+                    }) {
+                        Text("Clear All")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        onFilterSelected(selectedTags)
+                        onDismissRequest()
+                    }) {
+                        Text("Apply")
+                    }
                 }
             }
         }
-    )
+    }
 }
