@@ -19,8 +19,16 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -151,6 +160,11 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                     textColor = MaterialTheme.colorScheme.tertiary
                 )
             )
+            TextButton(
+                onClick = { navController?.navigate("passwordResetScreen") }
+            ) {
+                Text("Forgot Password?", color = Color.White)
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -189,6 +203,68 @@ fun LoginScreen(navController: NavController? = null, activity: ComponentActivit
                 Text("Register", color=Color.White)
             }
             LoginStateNavigation(authState, navController, activity, authViewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PasswordResetScreen(navController: NavController? = null, activity: ComponentActivity? = null) {
+    var email by remember { mutableStateOf("") }
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(AuthRepository()))
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("") },
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Navigate Up", tint = Color.White)
+                    }
+                },
+                backgroundColor = MaterialTheme.colorScheme.primary
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.Black)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Reset Password", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Color.White)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedLabelColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    textColor = MaterialTheme.colorScheme.tertiary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    authViewModel.sendPasswordResetEmail(email, context)
+                    navController?.popBackStack()
+                },
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Send Reset Email", color = Color.White)
+            }
         }
     }
 }
