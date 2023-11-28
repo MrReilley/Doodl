@@ -3,6 +3,7 @@ package com.example.doodl.ui.screens
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Filter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -113,6 +113,7 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
             state = refreshState,
             onRefresh = {
                 refreshState.isRefreshing = true
+                feedViewModel.fetchNewestPostsPaginated()
             }
         ) {
             ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
@@ -121,6 +122,7 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
     // Obtain the context using LocalContext.current
@@ -128,32 +130,40 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp
     val maxFeedHeight = screenHeightDp - navBarHeight
+
     var showFilterDialog by remember { mutableStateOf(false) }
+    val selectedTags = remember { mutableStateOf(emptyList<String>()) }
 
     Column {
         // Show filter dialog at the top
         if (showFilterDialog) {
             FilterDialog(
                 tags = postTags.values.flatten().distinct(),
-                selectedTags = mutableListOf(),
-                onFilterSelected = { selectedTags ->
-                    // Handle the selected tags here
-                    // You may want to filter the posts based on the selected tags
-                    showFilterDialog = false
+                selectedTags = selectedTags.value.toMutableList(),
+                onFilterSelected = { updatedTags ->
+                    selectedTags.value = updatedTags
                 },
                 onDismissRequest = { showFilterDialog = false }
             )
         }
-
-
-        // Display filter button
-        IconButton(
-            onClick = { showFilterDialog = true },
+        Text(
+            text = "Filter",
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+                .clickable {
+                    showFilterDialog = true
+                }
                 .padding(5.dp)
-        ) {
-            Icon(Icons.Default.Filter, contentDescription = "Filter")
+                .align(Alignment.CenterHorizontally),
+            color = Color.White
+        )
+        val filteredPosts = if (selectedTags.value.isNotEmpty()) {
+            // Filter posts based on selected tags
+            posts.filter { post ->
+                postTags[post.postId]?.intersect(selectedTags.value)?.isNotEmpty() ?: false
+            }
+        } else {
+            // If no tags are selected, display the full feed
+            posts
         }
         // Display a vertical list of images
         LazyColumn(
@@ -161,7 +171,7 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 .fillMaxHeight()
                 .heightIn(max = maxFeedHeight.dp)
         ) {
-            itemsIndexed(posts) { index, post ->
+            itemsIndexed(filteredPosts) { index, post ->
                 val isLastItem = index == posts.lastIndex
 
                 PostItem(post, userLikedPosts, postTags, feedViewModel, context)

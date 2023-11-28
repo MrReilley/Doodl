@@ -386,7 +386,7 @@ fun ProfileEditPopup(
     var newUsername by remember { mutableStateOf(currentUsername ?: "") }
     var newBio by remember { mutableStateOf(currentBio ?: "") }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current // Get the local context
+    val context = LocalContext.current
 
     // Icon to open the popup
     Icon(
@@ -584,24 +584,6 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                             .padding(bottom = 8.dp),
                                         contentScale = ContentScale.Crop
                                     )
-                                    /*val tagsForThisPost = postTags[imageUrls] ?: emptyList()
-                                    FlowRow(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Start,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        tagsForThisPost.forEach { tag ->
-                                            Text(
-                                                text = "#$tag",
-                                                modifier = Modifier
-                                                    .padding(2.dp)
-                                                    .clip(RoundedCornerShape(2.dp))
-                                                    .background(Color.Gray.copy(alpha = 0.2f))
-                                                    .padding(start = 2.dp, end = 2.dp),
-                                                color = Color.Gray
-                                            )
-                                        }
-                                    }*/
                                 }
                             }
                         }
@@ -717,35 +699,6 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String
                                     .padding(bottom = 8.dp),
                                 contentScale = ContentScale.Crop
                             )
-                            /*Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(4.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.likeicon),
-                                    contentDescription = null,
-                                    colorFilter = ColorFilter.tint(Color.Red)
-                                )
-                            }*/
-
-                            /*val tagsForThisPost = postTags[post.imageUrl] ?: emptyList()
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Start,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                tagsForThisPost.forEach { tag ->
-                                    Text(
-                                        text = "#$tag",
-                                        modifier = Modifier
-                                            .padding(2.dp)
-                                            .clip(RoundedCornerShape(2.dp))
-                                            .background(Color.Gray.copy(alpha = 0.2f))
-                                            .padding(start = 2.dp, end = 2.dp),
-                                        color = Color.Gray
-                                    )
-                                }
-                            }*/
                         }
                     }
                 }

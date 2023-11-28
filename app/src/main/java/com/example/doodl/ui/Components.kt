@@ -521,7 +521,7 @@ fun FilterDialog(
 ) {
     // Adjust these values to change the dialog size
     val dialogWidth = 500.dp
-    val dialogHeight = 600.dp
+    val dialogHeight = 350.dp
 
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -546,14 +546,6 @@ fun FilterDialog(
                         TagButton(tag, selectedTags)
                     }
                 }
-                /*tags.forEach { tag ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        TagButton(tag, selectedTags)
-                    }
-                }*/
 
                 // Buttons for clearing and applying filters
                 Row(
