@@ -323,7 +323,7 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                     repository.uploadProfileImage(userId, imageByteArray!!).await()
                 } else {
                     // Keep the current profile picture path
-                    profilePic.value ?: ""
+                    repository.getProfilePicPath(userId).await() ?: ""
                 }
 
                 // Fetch the download URL only if a new image has been uploaded
