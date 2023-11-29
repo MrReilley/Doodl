@@ -6,11 +6,20 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -34,6 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -56,13 +66,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.ui.screens.TagButton
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import java.util.regex.Pattern
@@ -475,7 +489,9 @@ fun ReAuthenticateDialog(
 @Composable
 fun BlackScreenWithLoadingIndicator(navController: NavController) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
@@ -489,6 +505,64 @@ fun BlackScreenWithLoadingIndicator(navController: NavController) {
             navController.navigate("loginScreen") {
                 popUpTo("loginScreen") { inclusive = false }
                 launchSingleTop = true
+            }
+        }
+    }
+}
+
+
+@Composable
+fun FilterDialog(
+    tags: List<String>,
+    selectedTags: MutableList<String>,
+    onFilterSelected: (List<String>) -> Unit,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Adjust these values to change the dialog size
+    val dialogWidth = 500.dp
+    val dialogHeight = 350.dp
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            dismissOnClickOutside = true,
+            dismissOnBackPress = true
+        )
+    ) {
+        Box(
+            modifier = modifier
+
+                .border(5.dp, Color.White, RoundedCornerShape(10.dp))
+                .padding(2.3.dp)
+                .size(width = dialogWidth, height = dialogHeight)
+                .background(Color.Black)
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Filter by Tags", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Display checkboxes for each tag
+                LazyVerticalGrid(columns = GridCells.Fixed(3)){
+                    items(tags) { tag ->
+                        TagButton(tag, selectedTags)
+                    }
+                }
+
+                // Buttons for clearing and applying filters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        onFilterSelected(selectedTags)
+                        onDismissRequest()
+                    }) {
+                        Text("Apply")
+                    }
+                }
             }
         }
     }

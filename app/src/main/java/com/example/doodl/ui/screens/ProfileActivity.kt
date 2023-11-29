@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -75,6 +77,7 @@ import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.EditableTextField
 import com.example.doodl.ui.ReAuthenticateDialog
 import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.ui.logout
 import com.example.doodl.util.ComposableStateUtil
 import com.example.doodl.util.ValidationUtils
@@ -106,6 +109,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val isFetchingUserPosts by feedViewModel.isFetchingUserPosts.observeAsState(false)
     val isFetchingLikedPosts by feedViewModel.isFetchingLikedPosts.observeAsState(false)
     val context = LocalContext.current //For updating profile pic
+    val postTags by feedViewModel.postTags.observeAsState(emptyMap())
 
     // Prepare the launcher for picking an image
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -146,6 +150,16 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             ) {
                 Text(text = "")
                 Spacer(modifier = Modifier.width(15.dp))
+                /*
+                if (userName.length >= 14) {
+                    Spacer(modifier = Modifier.width(110.dp))
+                }else if(userName.length >= 20){
+                    Spacer(modifier = Modifier.width(90.dp))
+                }
+                else{
+                    Spacer(modifier = Modifier.width(140.dp))
+                }*/
+
                 userName?.let {
                     Text(
                         text = it,
@@ -333,7 +347,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     } else {
                         Spacer(modifier = Modifier.width(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight )
+                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight , postTags)
                         }
                     }
 
@@ -350,7 +364,7 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     } else {
                         Spacer(modifier = Modifier.width(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight, postTags)
                         }
                     }
                 }
@@ -372,7 +386,7 @@ fun ProfileEditPopup(
     var newUsername by remember { mutableStateOf(currentUsername ?: "") }
     var newBio by remember { mutableStateOf(currentBio ?: "") }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current // Get the local context
+    val context = LocalContext.current
 
     // Icon to open the popup
     Icon(
@@ -480,13 +494,16 @@ fun ProfileEditPopup(
         )
     }
 }
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
+fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
             val configuration = LocalConfiguration.current
             val maxScreenHeightDp = configuration.screenHeightDp.dp
             val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
             val availableHeight = maxScreenHeight - navBarHeight
+
+            var isClicked by remember { mutableStateOf(false) }
+            var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
             Box(
                 modifier = Modifier.fillMaxSize()
             ){
@@ -501,7 +518,11 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
-                                .padding(8.dp)
+                                .padding(7.dp)
+                                .clickable {
+                                    clickedPost = post
+                                    isClicked = true
+                                }
                         ) {
                             Image(
                                 painter = rememberAsyncImagePainter(model = post.imageUrl),
@@ -517,15 +538,70 @@ fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int) {
                         }
                     }
                 }
+                if (isClicked && clickedPost != null) {
+                    AlertDialog(
+                        modifier = Modifier.border(2.3.dp, Color.White),
+                        onDismissRequest = {
+                            isClicked = false
+                            clickedPost = null
+                        }
+                    ) {
+                        clickedPost?.let { post ->
+                            Box(
+                                modifier = Modifier
+                                    .width(600.dp)
+                                    .height(520.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    ) {
+                                        RoundImageCardFeed(
+                                            url = post.profilePicUrl ?: "",
+                                            Modifier
+                                                .size(48.dp)
+                                                .padding(4.dp)
+                                        )
+                                        Text(
+                                            text = post.username ?: "Anonymous",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black,
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        )
+                                    }
+
+                                    Image(
+                                        painter = rememberAsyncImagePainter(model = post.imageUrl),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(0.67f)
+                                            .padding(bottom = 8.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
+fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
     val configuration = LocalConfiguration.current
     val maxScreenHeightDp = configuration.screenHeightDp.dp
     val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
     val availableHeight = maxScreenHeight - navBarHeight
+
+    var isClicked by remember { mutableStateOf(false) }
+    var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -541,7 +617,11 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(8.dp)
+                        .padding(7.dp)
+                        .clickable {
+                            clickedPost = post
+                            isClicked = true
+                        }
                 ) {
                     if (!post.imageUrl.isNullOrEmpty()) {
                         Image(
@@ -572,9 +652,60 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 }
             }
         }
+
+        if (isClicked && clickedPost != null) {
+            AlertDialog(
+                modifier = Modifier.border(2.3.dp, Color.White),
+                onDismissRequest = {
+                    isClicked = false
+                    clickedPost = null
+                }
+            ) {
+                clickedPost?.let { post ->
+                    Box(
+                        modifier = Modifier
+                            .width(600.dp)
+                            .height(525.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                RoundImageCardFeed(
+                                    url = post.profilePicUrl ?: "",
+                                    Modifier
+                                        .size(48.dp)
+                                        .padding(4.dp)
+                                )
+                                Text(
+                                    text = post.username ?: "Anonymous",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            Image(
+                                painter = rememberAsyncImagePainter(model = post.imageUrl),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.67f)
+                                    .padding(bottom = 8.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun ProfileLikedPostsPreview() {
@@ -587,5 +718,5 @@ fun ProfileLikedPostsPreview() {
         // We can add more here
     )
 
-    ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
+    //ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
 }

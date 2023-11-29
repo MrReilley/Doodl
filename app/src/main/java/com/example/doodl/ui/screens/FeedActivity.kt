@@ -3,6 +3,7 @@ package com.example.doodl.ui.screens
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,9 +64,12 @@ import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
 import com.example.doodl.ui.ConfirmationDialog
+import com.example.doodl.ui.FilterDialog
 import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,10 +85,15 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
     val postTags by feedViewModel.postTags.observeAsState(emptyMap())
     val isFetchingPosts by feedViewModel.isFetchingPosts.observeAsState(false)
-    // Fetch images once the composable is launched
-    LaunchedEffect(feedViewModel) {
+
+    // Use rememberSwipeRefreshState to manage the refresh state
+    val refreshState = rememberSwipeRefreshState(isRefreshing = false)
+
+    // Fetch images once the composable is launched or when refreshing
+    LaunchedEffect(feedViewModel, refreshState.isRefreshing) {
         feedViewModel.fetchNewestPostsPaginated()
         feedViewModel.fetchUserLikedAPost()
+        refreshState.isRefreshing = false
     }
     // Check if posts are being fetched and the list is currently empty
     val showCenteredLoadingIndicator = isFetchingPosts && newestPosts.isEmpty()
@@ -100,43 +109,83 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
         }
     } else {
         // Regular feed view
-        ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
+        SwipeRefresh(
+            state = refreshState,
+            onRefresh = {
+                refreshState.isRefreshing = true
+                feedViewModel.fetchNewestPostsPaginated()
+            }
+        ) {
+            ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
+        }
     }
-
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ImageFeed(
-    posts: List<Post>,
-    userLikedPosts: List<String>,
-    postTags: Map<String, List<String>>,
-    feedViewModel: FeedViewModel,
-    navBarHeight: Int) {
+fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
     // Obtain the context using LocalContext.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp
     val maxFeedHeight = screenHeightDp - navBarHeight
-    // Display a vertical list of images
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxHeight()
-            .heightIn(max = maxFeedHeight.dp)
-    ) {
-        itemsIndexed(posts) { index, post ->
-            val isLastItem = index == posts.lastIndex
 
-            PostItem(post, userLikedPosts, postTags, feedViewModel, context)
+    var showFilterDialog by remember { mutableStateOf(false) }
+    val selectedTags = remember { mutableStateOf(emptyList<String>()) }
 
-            if (isLastItem) {
-                // Trigger loading more posts when the last post is displayed
-                LaunchedEffect(key1 = Unit) {
-                    feedViewModel.fetchNewestPostsPaginated()
+    Column {
+        // Show filter dialog at the top
+        if (showFilterDialog) {
+            FilterDialog(
+                tags = postTags.values.flatten().distinct(),
+                selectedTags = selectedTags.value.toMutableList(),
+                onFilterSelected = { updatedTags ->
+                    selectedTags.value = updatedTags
+                },
+                onDismissRequest = { showFilterDialog = false }
+            )
+        }
+        Text(
+            text = "Filter",
+            modifier = Modifier
+                .clickable {
+                    showFilterDialog = true
                 }
-                Spacer(modifier = Modifier.height(65.dp))
+                .padding(4.dp)
+                .align(Alignment.CenterHorizontally),
+            color = Color.White
+        )
+        val filteredPosts = if (selectedTags.value.isNotEmpty()) {
+            posts.filter { post ->
+                postTags[post.postId]?.intersect(selectedTags.value)?.isNotEmpty() ?: false
+            }
+        } else {
+            // If no tags are selected, display the full feed
+            posts
+        }
+        // Display a vertical list of images
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxHeight()
+                .heightIn(max = maxFeedHeight.dp)
+        ) {
+            itemsIndexed(filteredPosts) { index, post ->
+                val isLastItem = index == posts.lastIndex
+
+                PostItem(post, userLikedPosts, postTags, feedViewModel, context)
+
+                if (isLastItem) {
+                    // Trigger loading more posts when the last post is displayed
+                    LaunchedEffect(key1 = Unit) {
+                        feedViewModel.fetchNewestPostsPaginated()
+                    }
+                    Spacer(modifier = Modifier.height(65.dp))
+                }
             }
         }
     }
+
 }
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -246,13 +295,22 @@ fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, Lis
                                 applyColorFilter = !applyColorFilter
                                 if (applyColorFilter) {
                                     feedViewModel.likePost(post.postId)
-                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT)
+                                        .show()
                                 } else {
                                     feedViewModel.unlikePost(post.postId)
-                                    Toast.makeText(context, "You disliked a post", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "You disliked a post",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             } else {
-                                Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Please wait before liking again.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                 )
