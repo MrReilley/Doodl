@@ -84,8 +84,10 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 val userPostsData = userPostIds.mapNotNull { postId ->
                     val post = repository.getPostData(postId).await().toObject(Post::class.java)
                     try {
-                        // Attempt to fetch the image URL
-                        post?.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                        val imageUrl = post?.let { repository.getImageUrl(it.imagePath).await() }
+                        val profilePicPath = post?.let { repository.getProfilePicPath(it.userId).await() }
+                        val profilePicUrl = profilePicPath?.let { repository.getProfilePicUrl(it).await() }
+                        post?.copy(imageUrl = imageUrl, profilePicUrl = profilePicUrl)
                     } catch (e: Exception) {
                         // If URL fetching fails, return the post without modifying imageUrl
                         Log.e("FeedViewModel", "Error fetching image URL for post $postId: ${e.message}")
@@ -202,8 +204,10 @@ class FeedViewModel(private val userId: String, private val repository: Reposito
                 val likedPostsData = likedPostIds.mapNotNull { postId ->
                     val post = repository.getPostData(postId).await().toObject(Post::class.java)
                     try {
-                        // Attempt to fetch the image URL
-                        post?.copy(imageUrl = repository.getImageUrl(post.imagePath).await())
+                        val imageUrl = post?.let { repository.getImageUrl(it.imagePath).await() }
+                        val profilePicPath = post?.let { repository.getProfilePicPath(it.userId).await() }
+                        val profilePicUrl = profilePicPath?.let { repository.getProfilePicUrl(it).await() }
+                        post?.copy(imageUrl = imageUrl, profilePicUrl = profilePicUrl)
                     } catch (e: Exception) {
                         // If URL fetching fails, return the post without modifying imageUrl
                         Log.e("FeedViewModel", "Error fetching image URL for post $postId: ${e.message}")
