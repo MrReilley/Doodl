@@ -342,7 +342,7 @@ fun CanvasActivity(
                        isColorPickerVisible.value = false
                        currentColorButton.value = null
                    }) {
-                       Text("Confirm",  color = Color.Black)
+                       Text("Confirm",  color = Color.White)
                    }
                }
             }

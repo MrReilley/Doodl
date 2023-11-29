@@ -43,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -556,11 +555,11 @@ fun FilterDialog(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = {
+                    Button(onClick = {
                         onFilterSelected(selectedTags)
                         onDismissRequest()
                     }) {
-                        Text("Apply")
+                        Text("Apply", color = Color.White)
                     }
                 }
             }
