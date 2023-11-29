@@ -532,12 +532,15 @@ fun FilterDialog(
     ) {
         Box(
             modifier = modifier
+
+                .border(5.dp, Color.White, RoundedCornerShape(10.dp))
+                .padding(2.3.dp)
                 .size(width = dialogWidth, height = dialogHeight)
-                .background(Color.White)
-                .padding(16.dp)
+                .background(Color.Black)
         ) {
             Column {
-                Text("Filter by Tags", fontWeight = FontWeight.Bold, color = Color.Black)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Filter by Tags", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.align(Alignment.CenterHorizontally))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Display checkboxes for each tag
@@ -550,13 +553,8 @@ fun FilterDialog(
                 // Buttons for clearing and applying filters
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    TextButton(onClick = {
-                        selectedTags.clear()
-                    }) {
-                        Text("Clear All")
-                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = {
                         onFilterSelected(selectedTags)

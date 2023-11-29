@@ -152,12 +152,11 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
                 .clickable {
                     showFilterDialog = true
                 }
-                .padding(5.dp)
+                .padding(4.dp)
                 .align(Alignment.CenterHorizontally),
             color = Color.White
         )
         val filteredPosts = if (selectedTags.value.isNotEmpty()) {
-            // Filter posts based on selected tags
             posts.filter { post ->
                 postTags[post.postId]?.intersect(selectedTags.value)?.isNotEmpty() ?: false
             }

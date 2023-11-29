@@ -160,7 +160,7 @@ class Repository {
         val updatedPost = post.copy(timestamp = System.currentTimeMillis())
         return db.collection("posts").document(post.postId).set(updatedPost)
     }
-    fun getNewestPosts(startAfter: DocumentSnapshot? = null, limit: Long = 5): Task<List<Post>> {
+    fun getNewestPosts(startAfter: DocumentSnapshot? = null, limit: Long = 4): Task<List<Post>> {
         var query = db.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(limit)
