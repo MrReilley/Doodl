@@ -20,21 +20,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Scaffold
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -75,10 +83,20 @@ fun CanvasScreen(
         // Do nothing, effectively disabling the back button
     }
     var selectedColor by remember { mutableStateOf(Color.Black) }
-
-    CanvasActivity(navController, canvasViewModel, navBarHeight,  selectedColor) { newColor ->
-        selectedColor = newColor
+    val pathsState = canvasViewModel.canvasPaths.observeAsState()
+    val paths = remember { pathsState.value ?: mutableStateListOf() }
+    LaunchedEffect(paths) {
+        canvasViewModel.canvasPaths.value = paths
     }
+
+    CanvasActivity(
+        navController = navController,
+        canvasViewModel = canvasViewModel,
+        navBarHeight = navBarHeight,
+        selectedColor = selectedColor,
+        updateSelectedColor = { newColor -> selectedColor = newColor },
+        paths = paths
+    )
 }
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -87,9 +105,9 @@ fun CanvasActivity(
     canvasViewModel: CanvasViewModel,
     navBarHeight: Int,
     selectedColor: Color,
-    updateSelectedColor: (Color) -> Unit
+    updateSelectedColor: (Color) -> Unit,
+    paths: MutableList<Triple<List<Offset>, Color, Float>>
 ) {
-    val paths = remember { mutableStateListOf<Triple<List<Offset>, Color, Float>>() }
     val currentPath = remember { mutableStateListOf<Offset>() }
     var canvasSize by remember { mutableStateOf(IntSize(0, 0)) }
     var brushSize by remember { mutableFloatStateOf(5f) }
@@ -152,6 +170,13 @@ fun CanvasActivity(
                 }) {
                     Icon(painter = painterResource(id = R.drawable.redo), contentDescription = "Redo")
                 }
+                IconButton(onClick = {
+                    if (!isColorPickerVisible.value && paths.isNotEmpty()) {
+                        paths.clear()
+                    }
+                }) {
+                    Icon(Icons.Default.Delete, contentDescription = "New Canvas")
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     onClick = {
@@ -163,7 +188,13 @@ fun CanvasActivity(
                     },
                     enabled = !isColorPickerVisible.value && paths.isNotEmpty()
                 ) {
-                    Text("Next", color = Color.Black)
+                    val textColor = if (!isColorPickerVisible.value && paths.isNotEmpty()) {
+                        Color.White
+                    } else {
+                        Color.Gray
+                    }
+
+                    Text("Next", color = textColor)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -209,8 +240,15 @@ fun CanvasActivity(
             ) {
                 Slider(
                     value = brushSize,
-                    onValueChange = { brushSize = it },
-                    valueRange = 5f..100f
+                    onValueChange = { newValue ->
+                        // Calculate the step size for the entire range
+                        val stepSize = 5f
+                        // Snap the value to the nearest step, starting at 5
+                        val stepsFromStart = ((newValue - 5) / stepSize).toInt()
+                        brushSize = 5f + stepsFromStart * stepSize
+                    },
+                    valueRange = 5f..105f,
+                    steps = 20
                 )
             }
         }
@@ -304,7 +342,7 @@ fun CanvasActivity(
                        isColorPickerVisible.value = false
                        currentColorButton.value = null
                    }) {
-                       Text("Confirm",  color = Color.Black)
+                       Text("Confirm",  color = Color.White)
                    }
                }
             }
@@ -321,20 +359,27 @@ fun PostInfoScreen(
     val bitmap = canvasViewModel.currentBitmap.value
     val context = LocalContext.current
     val selectedTags = remember { mutableStateListOf<String>() }
-    val tagOptions = listOf(
-        "Abstract",
-        "Animal",
-        "Anime",
-        "Cute",
-        "Dramatic",
-        "Funny",
-        "Scary",
-        "Landscape",
-        "Mysterious",
-        "Nostalgic",
-        "Realism",
-        "Surreal"
-    )
+    val showTextField = remember { mutableStateOf(false) }
+    val customTag = remember { mutableStateOf("") }
+    val tagOptions = remember { mutableStateListOf<String>() }
+
+    if (tagOptions.isEmpty()) {
+        tagOptions.addAll(listOf(
+            "Abstract",
+            "Animal",
+            "Anime",
+            "Cute",
+            "Dramatic",
+            "Funny",
+            "Scary",
+            "Landscape",
+            "Mysterious",
+            "Nostalgic",
+            "Realism",
+            "Surreal"
+        ))
+    }
+
     var isUploading by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -377,10 +422,15 @@ fun PostInfoScreen(
             }
 
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CustomTagEntry(tagOptions = tagOptions, customTag = customTag, selectedTags = selectedTags, showTextField = showTextField)
+                Spacer(modifier = Modifier.height(16.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -400,6 +450,7 @@ fun PostInfoScreen(
                                 isUploading = false
                                 if (success) {
                                     canvasViewModel.clearCurrentBitmap()
+                                    canvasViewModel.clearCanvasPaths()
                                     navController.navigate("feed")
                                     val message = "Post successful"
                                     val duration = Toast.LENGTH_SHORT
@@ -415,11 +466,12 @@ fun PostInfoScreen(
                     enabled = !isUploading
                 ) {
                     if (isUploading) {
-                        CircularProgressIndicator(color = Color.Black, strokeWidth = 2.dp)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
                     } else {
                         Text("Share", color = Color.White)
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -427,12 +479,14 @@ fun PostInfoScreen(
 
 @Composable
 fun TagButton(tag: String, selectedTags: MutableList<String>) {
-    val isSelected = remember { mutableStateOf(false) }
+    val isSelected = remember { mutableStateOf(tag in selectedTags) }
     Button(
         onClick = {
             isSelected.value = !isSelected.value
             if (isSelected.value) {
-                selectedTags.add(tag)
+                if (tag !in selectedTags) {
+                    selectedTags.add(tag)
+                }
             } else {
                 selectedTags.remove(tag)
             }
@@ -445,3 +499,63 @@ fun TagButton(tag: String, selectedTags: MutableList<String>) {
         Text(tag, color = if(isSelected.value) Color.Black else Color.White)
     }
 }
+
+@Composable
+fun CustomTagEntry(
+    tagOptions: SnapshotStateList<String>,
+    customTag: MutableState<String>,
+    selectedTags: SnapshotStateList<String>,
+    showTextField: MutableState<Boolean>
+) {
+    val allowedCharsPattern = "^[a-zA-Z0-9]*$".toRegex()
+    val maxLength = 16
+    val context = LocalContext.current
+
+    if (showTextField.value) {
+        Row(verticalAlignment = Alignment.CenterVertically)
+        {
+            TextField(
+                value = customTag.value,
+                onValueChange = { newValue ->
+                    when {
+                        newValue.length > maxLength -> {
+                            Toast.makeText(context, "Tags can only be up to 16 characters", Toast.LENGTH_SHORT).show()
+                        }
+                        !newValue.matches(allowedCharsPattern) -> {
+                            Toast.makeText(context, "Input contains invalid characters", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            customTag.value = newValue
+                        }
+                    }
+                },
+                label = { Text("Add Custom Tag") },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
+                    focusedLabelColor = MaterialTheme.colorScheme.tertiary
+                )
+            )
+            Button(
+                onClick = {
+                    if (customTag.value.isNotBlank() && customTag.value !in tagOptions) {
+                        tagOptions += customTag.value
+                        selectedTags.add(customTag.value)
+                        customTag.value = ""
+                        showTextField.value = false
+                    }
+                }
+            ) {
+                Text("Add", color = Color.White)
+            }
+        }
+    } else {
+        Button(onClick = {
+            showTextField.value = true
+        }) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Custom Tag", tint = Color.White)
+        }
+    }
+}
+

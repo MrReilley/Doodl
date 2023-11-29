@@ -5,14 +5,23 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
@@ -26,21 +35,26 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -51,12 +65,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
+import com.example.doodl.ui.screens.TagButton
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import java.util.regex.Pattern
+
 // Composable functions for reusable UI components
 
 @Composable
@@ -309,16 +332,49 @@ fun RoundImageCard(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun RoundImageCardFeed(
+    url: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
+) {
+    if(url.isBlank()) {
+        // We can have a default image here instead of text
+        Card(shape = CircleShape, modifier = modifier) {
+            Text(
+                "No Image",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    } else {
+        Card(
+            shape = CircleShape,
+            modifier = modifier
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(model = url),
+                contentDescription = null,
+                contentScale = contentScale,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .size(24.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
+
+
 @Composable
 fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Unit) {
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val isFocused = remember { mutableStateOf(false) }
     Column {
         OutlinedTextField(
             value = text,
             onValueChange = { onTextChanged(it) },
-            label = { Text(text = label)},
+            label = { Text(text = label, color = Color.White)},
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done
             ),
@@ -333,36 +389,180 @@ fun EditableTextField(label: String, text: String, onTextChanged: (String) -> Un
                 focusedLabelColor = MaterialTheme.colorScheme.tertiary,
                 unfocusedLabelColor = Color.White,
                 cursorColor = MaterialTheme.colorScheme.tertiary,
-                textColor = MaterialTheme.colorScheme.tertiary
-            )
+                textColor = if (isFocused.value) MaterialTheme.colorScheme.tertiary else Color.White
+            ),
+            modifier = Modifier
+                .onFocusChanged { focusState ->
+                    isFocused.value = focusState.isFocused
+                }
+        )
+    }
+}
+@Composable
+fun ConfirmationDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    if (showDialog) {
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { onDismiss() },
+            title = { Text(title, color = Color.White) },
+            text = { Text(message, color = Color.White) },
+            confirmButton = {
+                Button(onClick = onConfirm) {
+                    Text("Yes", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(onClick = onCancel) {
+                    Text("No", color = Color.White)
+                }
+            }
         )
     }
 }
 
 @Composable
-fun ProfilePictureItem(
-    imageResource: Int,
-    isSelected: Boolean,
-    onProfilePictureSelected: () -> Unit
+fun ReAuthenticateDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onReAuthenticate: (String) -> Unit,
+    errorMessage: String
 ) {
+    if (showDialog) {
+        var password by remember { mutableStateOf("") }
+
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = { onDismiss() },
+            title = { Text("Re-authenticate", color = Color.White) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Enter your password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                            unfocusedBorderColor = Color.White,
+                            focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                            unfocusedLabelColor = Color.White,
+                            cursorColor = MaterialTheme.colorScheme.tertiary,
+                            textColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                    if (errorMessage.isNotEmpty()) {
+                        Text(
+                            text = errorMessage,
+                            color = Color.Red,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { onReAuthenticate(password) }) {
+                    Text("Confirm", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(onClick = { onDismiss() }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+}
+@Composable
+fun BlackScreenWithLoadingIndicator(navController: NavController) {
     Box(
         modifier = Modifier
-            .padding(8.dp)
-            .clickable {
-                onProfilePictureSelected()
-            }
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = imageResource),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(100.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(
-                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onBackground
-                )
-                .align(Alignment.Center)
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 2.dp
         )
+
+        // LaunchedEffect for delayed navigation
+        LaunchedEffect(Unit) {
+            delay(2000L)
+            navController.navigate("loginScreen") {
+                popUpTo("loginScreen") { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
+}
+
+
+@Composable
+fun FilterDialog(
+    tags: List<String>,
+    selectedTags: MutableList<String>,
+    onFilterSelected: (List<String>) -> Unit,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Adjust these values to change the dialog size
+    val dialogWidth = 500.dp
+    val dialogHeight = 350.dp
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            dismissOnClickOutside = true,
+            dismissOnBackPress = true
+        )
+    ) {
+        Box(
+            modifier = modifier
+
+                .border(5.dp, Color.White, RoundedCornerShape(10.dp))
+                .padding(2.3.dp)
+                .size(width = dialogWidth, height = dialogHeight)
+                .background(Color.Black)
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Filter by Tags", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Display checkboxes for each tag
+                LazyVerticalGrid(columns = GridCells.Fixed(3)){
+                    items(tags) { tag ->
+                        TagButton(tag, selectedTags)
+                    }
+                }
+
+                // Buttons for clearing and applying filters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        onFilterSelected(selectedTags)
+                        onDismissRequest()
+                    }) {
+                        Text("Apply", color = Color.White)
+                    }
+                }
+            }
+        }
     }
 }

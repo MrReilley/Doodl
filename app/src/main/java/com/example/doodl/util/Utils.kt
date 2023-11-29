@@ -91,7 +91,35 @@ fun generateBitmapFromPaths(paths: List<Triple<List<Offset>, Color, Float>>,
     }
     return outputBitmap
 }
+object ValidationUtils {
 
+    fun validateUsername(username: String): Pair<Boolean, String> {
+        // Username should contain only letters and numbers and be no longer than 12 characters
+        val isValid = username.matches(Regex("^[a-zA-Z0-9]{1,15}\$"))
+        val message = if (isValid) "Valid username" else "Username should be 1-12 characters long and contain only letters and numbers."
+        return Pair(isValid, message)
+    }
 
+    fun validateBio(bio: String): Pair<Boolean, String> {
+        // Bio should be no more than 100 characters
+        val isValid = bio.length <= 100
+        val message = if (isValid) "Valid bio" else "Bio should not exceed 100 characters."
+        return Pair(isValid, message)
+    }
+
+}
+object ComposableStateUtil {
+    fun resetEditableFields(
+        currentUsername: String?,
+        currentBio: String?,
+        onUsernameReset: (String) -> Unit,
+        onBioReset: (String) -> Unit
+    ) {
+        val newUsername = currentUsername ?: ""
+        val newBio = currentBio ?: ""
+        onUsernameReset(newUsername)
+        onBioReset(newBio)
+    }
+}
 
 

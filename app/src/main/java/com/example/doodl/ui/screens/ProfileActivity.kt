@@ -1,6 +1,10 @@
 package com.example.doodl.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,10 +12,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,11 +29,14 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -37,7 +46,6 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,29 +58,31 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
-import com.example.doodl.data.User
 import com.example.doodl.data.repository.Repository
+import com.example.doodl.ui.ConfirmationDialog
 import com.example.doodl.ui.EditableTextField
-import com.example.doodl.ui.ProfilePictureItem
+import com.example.doodl.ui.ReAuthenticateDialog
 import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.ui.logout
+import com.example.doodl.util.ComposableStateUtil
+import com.example.doodl.util.ValidationUtils
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
-
-private var lastUserProfile = mutableStateOf(User(R.drawable.profpic8, "userName", "This is for the bio/description box for the template section of the profile page :)."))
 
 @Composable
 fun ProfileScreen(userId: String, navController: NavController? = null, navBarHeight: Int) {
@@ -83,25 +93,46 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     val feedViewModel:FeedViewModel = viewModel(factory = FeedViewModelFactory(userId, repository))
     // Fetch images once the composable is launched
     LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchUserImageUrls()
+        feedViewModel.fetchUserPosts()
         feedViewModel.fetchUserDetails(userId)
         feedViewModel.fetchLikedPosts()
+        feedViewModel.fetchProfileImages()
     }
-    var profileImage by remember { mutableIntStateOf(lastUserProfile.value.profileImageResource) }
-    //var userName by remember { mutableStateOf(lastUserProfile.value.username) }
-    //var userBioText by remember { mutableStateOf(lastUserProfile.value.description) }
 
     // Observe images LiveData and pass it to the ImageFeed composable.
-    val imageUrls = feedViewModel.userImageUrls.observeAsState(emptyList()).value
-
-    var userName = feedViewModel.userName.observeAsState(null).value
-    val profilePicBitmap = feedViewModel.profilePic.observeAsState(null).value
-    var userBioText = feedViewModel.userBio.observeAsState(null).value
+    val userPosts = feedViewModel.userPosts.observeAsState(emptyList()).value
+    val userName = feedViewModel.userName.observeAsState(null).value
+    val userBioText = feedViewModel.userBio.observeAsState(null).value
     val likedPosts = feedViewModel.likedPosts.observeAsState(emptyList())
+    val profilePicUrl by feedViewModel.profilePic.observeAsState()
+    val profileImages by feedViewModel.profileImages.observeAsState(emptyList())
+    val isFetchingUserPosts by feedViewModel.isFetchingUserPosts.observeAsState(false)
+    val isFetchingLikedPosts by feedViewModel.isFetchingLikedPosts.observeAsState(false)
+    val context = LocalContext.current //For updating profile pic
+    val postTags by feedViewModel.postTags.observeAsState(emptyMap())
 
-    val onNameUpdated: (String) -> Unit = { newName ->
-        userName = newName
+    // Prepare the launcher for picking an image
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selectedImageUri ->
+            // Launch a coroutine to process the image and update the profile
+            feedViewModel.onImageSelected(selectedImageUri, context)
+        } ?: run {
+            // No image was selected, call updateProfile with null for imageByteArray
+            feedViewModel.updateProfile(
+                newUsername = userName ?: "",
+                newBio = userBioText ?: "",
+                imageByteArray = null
+            )
+        }
     }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showReAuthenticateDialog by remember { mutableStateOf(false) }
+    var canDeleteAccount by remember { mutableStateOf(false) }
+    var reAuthError by remember { mutableStateOf("") }
+
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -114,7 +145,8 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 // feed card layout
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "")
                 Spacer(modifier = Modifier.width(15.dp))
@@ -127,7 +159,6 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                 else{
                     Spacer(modifier = Modifier.width(140.dp))
                 }*/
-                val maxUsernameLength = 15
 
                 userName?.let {
                     Text(
@@ -139,23 +170,27 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                         color = Color.White
                     )
                 }
-                //Spacer(modifier = Modifier.weight(0.05f))
-                Spacer(modifier = Modifier.width(155.dp))
+                Spacer(modifier = Modifier.weight(1f)) // Flexible spacer to push content to sides
                 userName?.let {
-                    EditPopup(
-                        it,
-                        userBioText,
-                        profileImage,
-                        selectedProfilePicture = remember { mutableIntStateOf(profileImage) },
-                        onTextUpdated = { newUsername, newDescription, newProfilePicture ->
-                            userName = newUsername
-                            userBioText = newDescription
-                            profileImage = newProfilePicture
+                    ProfileEditPopup(
+                        currentUsername = feedViewModel.userName.value,
+                        currentBio = feedViewModel.userBio.value,
+                        profileImages = profileImages,
+                        onImageSelected = { pickImageLauncher.launch("image/*") },
+                        onConfirm = { newUsername, newBio, selectedImageUrl ->
+                            // If a new image URL is selected from the stored images, update with that URL
+                            if (selectedImageUrl != null) {
+                                // User selected an existing image URL
+                                feedViewModel.updateProfileWithImageUrl(newUsername, newBio, selectedImageUrl)
+                            } else {
+                                // Only username and bio are being updated
+                                feedViewModel.updateProfile(newUsername, newBio, null)
+                            }
                         },
-                        onNameUpdated = onNameUpdated // Pass the lambda function
+                        viewModel = feedViewModel
                     )
                 }
-                //Spacer(modifier = Modifier.weight(0.002f))
+                // Logout Account Icon
                 Spacer(modifier = Modifier.width(15.dp))
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
@@ -163,20 +198,97 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable {
-                            if (navController != null) {
-                                logout(navController)
+                            showLogoutDialog = true
+                        }
+                )
+                ConfirmationDialog(
+                    showDialog = showLogoutDialog,
+                    onDismiss = { showLogoutDialog = false },
+                    title = "Logout",
+                    message = "Are you sure you want to log out?",
+                    onConfirm = {
+                        if (navController != null) {
+                            logout(navController)
+                        }
+                        showLogoutDialog = false
+                    },
+                    onCancel = { showLogoutDialog = false }
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+                // Delete Account Icon
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Account",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable {
+                            showReAuthenticateDialog = true
+                        }
+                )
+                // Show re-authentication dialog
+                ReAuthenticateDialog(
+                    showDialog = showReAuthenticateDialog,
+                    onDismiss = {
+                        showReAuthenticateDialog = false
+                        reAuthError = ""
+                    },
+                    onReAuthenticate = { password ->
+                        // Perform re-authentication with the provided password
+                        feedViewModel.reAuthenticateUser(password) { isReAuthenticated ->
+                            if (isReAuthenticated) {
+                                canDeleteAccount = true
+                                showReAuthenticateDialog = false
+                                showDeleteAccountDialog = true
+                                reAuthError = ""
+                            } else {
+                                // failed re-authentication
+                                canDeleteAccount = false
+                                reAuthError = "Re-authentication failed. Please try again."
                             }
                         }
+                    },
+                    errorMessage = reAuthError
+                )
+
+                // Confirmation dialog for account deletion
+                ConfirmationDialog(
+                    showDialog = showDeleteAccountDialog,
+                    onDismiss = { showDeleteAccountDialog = false },
+                    title = "Delete Account",
+                    message = "Are you sure you want to delete your account? This action cannot be undone.",
+                    onConfirm = {
+                        showDeleteAccountDialog = false
+                        navController?.navigate("deleteAccountLoading")
+                        feedViewModel.deleteAccount(userId) {
+
+                        }
+                    },
+                    onCancel = {
+                        showDeleteAccountDialog = false
+                        canDeleteAccount = false
+
+                    }
                 )
             }
             Spacer(modifier = Modifier.width(25.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RoundImageCard(
-                    image = profileImage,
-                    Modifier
-                        .size(115.dp)
-                        .padding(5.dp)
-                )
+                if (profilePicUrl != null) {//new
+                    Image(
+                        painter = rememberAsyncImagePainter(model = profilePicUrl),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .size(115.dp)
+                            .padding(5.dp)
+                    )
+                } else {
+                    // We can show a default image here
+                    RoundImageCard(
+                        image = R.drawable.profpic8,
+                        Modifier
+                            .size(115.dp)
+                            .padding(5.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = userBioText ?: "No bio available.",
@@ -224,15 +336,36 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
             }
             when (selectedTabIndex) {
                 0 -> {
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileUsersPosts(imageUrls = imageUrls, navBarHeight = navBarHeight )
+                    if (isFetchingUserPosts) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ProfileUsersPosts(posts = userPosts, navBarHeight = navBarHeight , postTags)
+                        }
                     }
+
                 }
                 1 -> {
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProfileLikedPosts(posts = likedPosts.value, navBarHeight)
+                    if (isFetchingLikedPosts) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ProfileLikedPosts(posts = likedPosts.value, navBarHeight, postTags)
+                        }
                     }
                 }
             }
@@ -240,112 +373,137 @@ fun ProfileScreen(userId: String, navController: NavController? = null, navBarHe
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun EditPopup(
-    oldUsername: String,
-    oldDescription: String?,
-    oldImageResource: Int,
-    selectedProfilePicture: MutableState<Int>,
-    onTextUpdated: (newUsername: String, newDescription: String?, newImageResource: Int) -> Unit,
-    onNameUpdated: (newName: String) -> Unit // Add a new callback for name update
+fun ProfileEditPopup(
+    currentUsername: String?,
+    currentBio: String?,
+    profileImages: List<String>,
+    onImageSelected: () -> Unit, // Callback when the image icon is clicked
+    onConfirm: (String, String, String?) -> Unit, // Callback when the save button is clicked
+    viewModel: FeedViewModel
 ) {
-    var isEditable by remember { mutableStateOf(false) }
-    var editedName by remember { mutableStateOf(oldUsername) } // Use editedName
-    var description: String? by remember { mutableStateOf(oldDescription) }
-    var profilePicture by remember { mutableIntStateOf(oldImageResource) }
-    val profilePictures = listOf(
-        R.drawable.profpic1,
-        R.drawable.profpic2,
-        R.drawable.profpic3,
-        R.drawable.profpic8,
-        R.drawable.profpic4,
-        R.drawable.profpic5,
-        R.drawable.profpic6,
-        R.drawable.profpic7,
-        R.drawable.profpic9,
-        R.drawable.profpic10
+    var isPopupVisible by remember { mutableStateOf(false) }
+    var newUsername by remember { mutableStateOf(currentUsername ?: "") }
+    var newBio by remember { mutableStateOf(currentBio ?: "") }
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    // Icon to open the popup
+    Icon(
+        imageVector = Icons.Default.Edit,
+        tint = MaterialTheme.colorScheme.primary,
+        contentDescription = "Edit Profile",
+        modifier = Modifier.clickable {
+            ComposableStateUtil.resetEditableFields(
+                currentUsername = currentUsername,
+                currentBio = currentBio,
+                onUsernameReset = { newUsername = it },
+                onBioReset = { newBio = it }
+            )
+            isPopupVisible = true
+        }
     )
 
-    Column {
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .clickable {
-                    isEditable = true
-                }
-        )
-
-        if (isEditable) {
-            AlertDialog(
-                containerColor = Color.Black,
-                modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
-                onDismissRequest = {
-                    isEditable = false
-                },
-                title = {
-                    Text("Edit your profile", color = Color.White)
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            isEditable = false
-                            // Pass the editedName to the onNameUpdated callback
-                            onNameUpdated(editedName)
-                            onTextUpdated(editedName, description, profilePicture)
-                            val updatedUserProfile = User(profilePicture, editedName, description)
-                            lastUserProfile.value = updatedUserProfile
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+    // The actual popup
+    if (isPopupVisible) {
+        AlertDialog(
+            containerColor = Color.Black,
+            modifier = Modifier.border(2.3.dp, Color.White, RoundedCornerShape(30.dp)),
+            onDismissRequest = {
+                isPopupVisible = false
+                selectedImageUrl = null
+            },
+            title = { Text("Edit Your Profile") },
+            text = {
+                Column {
+                    Text(text = "Set your profile picture", color = Color.White)
+                    // Icon for picking an image
+                    Row {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = "Change Profile Picture",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable { onImageSelected() }
+                                .padding(16.dp)
+                                .size(48.dp)
                         )
-                    ) {
-                        Text("Save", color = Color.Black)
-                    }
-                },
-                text = {
-                    Column {
-                        Text(text = "Set your profile picture", color = Color.White)
-                        // List of selectable profile pictures
                         LazyRow {
-                            items(profilePictures) { imageResource ->
-                                ProfilePictureItem(
-                                    imageResource = imageResource,
-                                    isSelected = imageResource == selectedProfilePicture.value,
-                                    onProfilePictureSelected = {
-                                        selectedProfilePicture.value = imageResource
-                                        profilePicture = imageResource
-                                    }
+                            items(profileImages) { imageUrl ->
+                                val isSelected = imageUrl == selectedImageUrl
+                                Image(
+                                    painter = rememberAsyncImagePainter(model = imageUrl),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .padding(8.dp)
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable {
+                                            selectedImageUrl = imageUrl
+                                        }
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        // Use editedName for the name input field
-                        EditableTextField("Username", editedName) { newText ->
-                            editedName = newText // Update the editedName
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField(
+                        label = "Username",
+                        text = newUsername,
+                        onTextChanged = { newUsername = it }
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditableTextField(
+                        label = "Bio",
+                        text = newBio,
+                        onTextChanged = { newBio = it }
+                    )
 
-                        var nDescription: String = description ?: ""
-                        EditableTextField("Description", nDescription) { newText ->
-                            nDescription = newText
-                            description = nDescription
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val (isUsernameValid, usernameMessage) = ValidationUtils.validateUsername(newUsername)
+                        val (isBioValid, bioMessage) = ValidationUtils.validateBio(newBio)
+                        if (!isUsernameValid) {
+                            Toast.makeText(context, usernameMessage, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        if (!isBioValid) {
+                            Toast.makeText(context, bioMessage, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        viewModel.checkUsernameAvailability(newUsername) { isAvailable ->
+                            if (!isAvailable && newUsername != currentUsername) {
+                                Toast.makeText(context, "Username already taken", Toast.LENGTH_SHORT).show()
+                            } else {
+                                onConfirm(newUsername, newBio, selectedImageUrl)
+                                isPopupVisible = false
+                                Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
-                }
-            )
-        }
+                ) { Text("Save", color = Color.White) }
+            }
+        )
     }
 }
-
-        @Composable
-fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileUsersPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
             val configuration = LocalConfiguration.current
             val maxScreenHeightDp = configuration.screenHeightDp.dp
             val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
             val availableHeight = maxScreenHeight - navBarHeight
+
+            var isClicked by remember { mutableStateOf(false) }
+            var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
             Box(
                 modifier = Modifier.fillMaxSize()
             ){
@@ -353,17 +511,21 @@ fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
                     columns = GridCells.Fixed(3),
                     modifier = Modifier.height(availableHeight.dp)
                 ) {
-                    itemsIndexed(imageUrls) { index, imageUrl ->
+                    itemsIndexed(posts) { index, post ->
                         val itemsPerRow = 3
                         val rowNumber = index / itemsPerRow
-                        val isLastRow = rowNumber == (imageUrls.size - 1) / itemsPerRow
+                        val isLastRow = rowNumber == (posts.size - 1) / itemsPerRow
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
-                                .padding(8.dp)
+                                .padding(7.dp)
+                                .clickable {
+                                    clickedPost = post
+                                    isClicked = true
+                                }
                         ) {
                             Image(
-                                painter = rememberAsyncImagePainter(model = imageUrl),
+                                painter = rememberAsyncImagePainter(model = post.imageUrl),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -376,15 +538,70 @@ fun ProfileUsersPosts(imageUrls: List<String>, navBarHeight: Int) {
                         }
                     }
                 }
+                if (isClicked && clickedPost != null) {
+                    AlertDialog(
+                        modifier = Modifier.border(2.3.dp, Color.White),
+                        onDismissRequest = {
+                            isClicked = false
+                            clickedPost = null
+                        }
+                    ) {
+                        clickedPost?.let { post ->
+                            Box(
+                                modifier = Modifier
+                                    .width(600.dp)
+                                    .height(520.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    ) {
+                                        RoundImageCardFeed(
+                                            url = post.profilePicUrl ?: "",
+                                            Modifier
+                                                .size(48.dp)
+                                                .padding(4.dp)
+                                        )
+                                        Text(
+                                            text = post.username ?: "Anonymous",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black,
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        )
+                                    }
+
+                                    Image(
+                                        painter = rememberAsyncImagePainter(model = post.imageUrl),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(0.67f)
+                                            .padding(bottom = 8.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
+fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int, postTags: Map<String, List<String>>) {
     val configuration = LocalConfiguration.current
     val maxScreenHeightDp = configuration.screenHeightDp.dp
     val maxScreenHeight = with(LocalDensity.current) { maxScreenHeightDp.toPx() }
     val availableHeight = maxScreenHeight - navBarHeight
+
+    var isClicked by remember { mutableStateOf(false) }
+    var clickedPost by remember { mutableStateOf<Post?>(null) } // Store the clicked post
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -400,22 +617,106 @@ fun ProfileLikedPosts(posts: List<Post>, navBarHeight: Int) {
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(8.dp)
+                        .padding(7.dp)
+                        .clickable {
+                            clickedPost = post
+                            isClicked = true
+                        }
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = post.imageUrl),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .scale(1.1f) // Apply the scaling factor to individual images
-                    )
+                    if (!post.imageUrl.isNullOrEmpty()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = post.imageUrl),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .scale(1.1f) // Apply the scaling factor to individual images
+                        )
+                    } else {
+                        // Display alternative content for empty imageUrl
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .scale(1.1f)
+                                .aspectRatio(1f)
+                                .background(color = Color.DarkGray),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("No Image Available", color = Color.LightGray, textAlign = TextAlign.Center)
+                        }
+                    }
                 }
                 if (isLastRow) {
                     Spacer(modifier = Modifier.padding(bottom = 195.dp))
                 }
             }
         }
+
+        if (isClicked && clickedPost != null) {
+            AlertDialog(
+                modifier = Modifier.border(2.3.dp, Color.White),
+                onDismissRequest = {
+                    isClicked = false
+                    clickedPost = null
+                }
+            ) {
+                clickedPost?.let { post ->
+                    Box(
+                        modifier = Modifier
+                            .width(600.dp)
+                            .height(525.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                RoundImageCardFeed(
+                                    url = post.profilePicUrl ?: "",
+                                    Modifier
+                                        .size(48.dp)
+                                        .padding(4.dp)
+                                )
+                                Text(
+                                    text = post.username ?: "Anonymous",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            Image(
+                                painter = rememberAsyncImagePainter(model = post.imageUrl),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.67f)
+                                    .padding(bottom = 8.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+@Preview(showBackground = true)
+@Composable
+fun ProfileLikedPostsPreview() {
+    // Mock data for preview
+    val mockPosts = listOf(
+        Post("https://example.com/image1.jpg"),
+        Post("https://example.com/image2.jpg"),
+        Post("https://example.com/image3.jpg"),
+        Post("https://example.com/image4.jpg"),
+        // We can add more here
+    )
 
+    //ProfileLikedPosts(posts = mockPosts, navBarHeight = 56)
+}

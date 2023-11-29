@@ -1,11 +1,14 @@
 package com.example.doodl.ui.screens
 
+import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,13 +18,25 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,15 +55,24 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.doodl.R
 import com.example.doodl.data.Post
 import com.example.doodl.data.repository.Repository
-import com.example.doodl.ui.RoundImageCard
+import com.example.doodl.ui.ConfirmationDialog
+import com.example.doodl.ui.FilterDialog
+import com.example.doodl.ui.RoundImageCardFeed
 import com.example.doodl.viewmodel.FeedViewModel
 import com.example.doodl.viewmodel.FeedViewModelFactory
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun FeedScreen(userId: String, navBarHeight: Int) {
@@ -60,15 +84,45 @@ fun FeedScreen(userId: String, navBarHeight: Int) {
     val newestPosts by feedViewModel.newestPosts.observeAsState(emptyList())
     val userLikesAPost by feedViewModel.userLikedAPost.observeAsState(emptyList())
     val postTags by feedViewModel.postTags.observeAsState(emptyMap())
-    // Fetch images once the composable is launched
-    LaunchedEffect(feedViewModel) {
-        feedViewModel.fetchNewestPosts()
+    val isFetchingPosts by feedViewModel.isFetchingPosts.observeAsState(false)
+
+    // Use rememberSwipeRefreshState to manage the refresh state
+    val refreshState = rememberSwipeRefreshState(isRefreshing = false)
+
+    // Fetch images once the composable is launched or when refreshing
+    LaunchedEffect(feedViewModel, refreshState.isRefreshing) {
+        feedViewModel.fetchNewestPostsPaginated()
         feedViewModel.fetchUserLikedAPost()
+        refreshState.isRefreshing = false
     }
-    ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
+    // Check if posts are being fetched and the list is currently empty
+    val showCenteredLoadingIndicator = isFetchingPosts && newestPosts.isEmpty()
+
+    if (showCenteredLoadingIndicator) {
+        // Show centered loading indicator
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary, strokeWidth = 2.dp)
+        }
+    } else {
+        // Regular feed view
+        SwipeRefresh(
+            state = refreshState,
+            onRefresh = {
+                refreshState.isRefreshing = true
+                feedViewModel.fetchNewestPostsPaginated()
+            }
+        ) {
+            ImageFeed(newestPosts, userLikesAPost, postTags, feedViewModel, navBarHeight)
+        }
+    }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, navBarHeight: Int) {
     // Obtain the context using LocalContext.current
@@ -76,121 +130,281 @@ fun ImageFeed(posts: List<Post>, userLikedPosts: List<String>, postTags: Map<Str
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp
     val maxFeedHeight = screenHeightDp - navBarHeight
-    // Display a vertical list of images, filling the available space
-    LazyColumn(
-        modifier = Modifier.fillMaxHeight().heightIn(max = maxFeedHeight.dp)
-    ) {
-        itemsIndexed(posts) {index, post ->
-            val isLastItem = index == posts.size - 1
 
-            // For each image, create an Image composable
-            val isLiked = userLikedPosts.contains(post.postId)
-            var applyColorFilter by remember { mutableStateOf(isLiked) }
-            // background of feed
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
-                Column(
+    var showFilterDialog by remember { mutableStateOf(false) }
+    val selectedTags = remember { mutableStateOf(emptyList<String>()) }
+
+    Column {
+        // Show filter dialog at the top
+        if (showFilterDialog) {
+            FilterDialog(
+                tags = postTags.values.flatten().distinct(),
+                selectedTags = selectedTags.value.toMutableList(),
+                onFilterSelected = { updatedTags ->
+                    selectedTags.value = updatedTags
+                },
+                onDismissRequest = { showFilterDialog = false }
+            )
+        }
+        Text(
+            text = "Filter",
+            modifier = Modifier
+                .clickable {
+                    showFilterDialog = true
+                }
+                .padding(4.dp)
+                .align(Alignment.CenterHorizontally),
+            color = Color.White
+        )
+        val filteredPosts = if (selectedTags.value.isNotEmpty()) {
+            posts.filter { post ->
+                postTags[post.postId]?.intersect(selectedTags.value)?.isNotEmpty() ?: false
+            }
+        } else {
+            // If no tags are selected, display the full feed
+            posts
+        }
+        // Display a vertical list of images
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxHeight()
+                .heightIn(max = maxFeedHeight.dp)
+        ) {
+            itemsIndexed(filteredPosts) { index, post ->
+                val isLastItem = index == posts.lastIndex
+
+                PostItem(post, userLikedPosts, postTags, feedViewModel, context)
+
+                if (isLastItem) {
+                    // Trigger loading more posts when the last post is displayed
+                    LaunchedEffect(key1 = Unit) {
+                        feedViewModel.fetchNewestPostsPaginated()
+                    }
+                    Spacer(modifier = Modifier.height(65.dp))
+                }
+            }
+        }
+    }
+
+}
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PostItem(post: Post, userLikedPosts: List<String>, postTags: Map<String, List<String>>, feedViewModel: FeedViewModel, context: Context) {
+    val isLiked = userLikedPosts.contains(post.postId)
+    var applyColorFilter by remember { mutableStateOf(isLiked) }
+    val isFollowing = feedViewModel.followStatusMap.observeAsState().value?.get(post.userId) ?: false
+    val unselectedColor = MaterialTheme.colorScheme.primary
+    val selectedColor = MaterialTheme.colorScheme.tertiary
+    var showMenu by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()) }
+    val formattedDate = remember(post.timestamp) { dateFormat.format(Date(post.timestamp)) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .background(Color.White)
+        ) {
+            // User profile and post information
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RoundImageCardFeed(
+                    url = post.profilePicUrl ?: "",
+                    Modifier
+                        .size(48.dp)
+                        .padding(4.dp)
+                )
+                Text(
+                    text = post.username ?: "Anonymous",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (post.userId != feedViewModel.currentUserID) {
+                    Button(
+                        onClick = {
+                            if (isFollowing) {
+                                feedViewModel.unfollowUser(post.userId)
+                            } else {
+                                feedViewModel.followUser(post.userId)
+                            }
+                            // We might want to add a cooldown here, similar to the like functionality
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isFollowing) selectedColor else unselectedColor
+                        ),
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Text(
+                            text = if (isFollowing) "Unfollow" else "Follow",
+                            color = if (isFollowing) Color.Black else  Color.White
+                        )
+                    }
+                }
+
+            }
+
+            // Post image
+            if (!post.imageUrl.isNullOrEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = post.imageUrl),
+                    contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .background(Color.White)
+                        .aspectRatio(0.68f)
+                        .padding(8.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.68f)
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // feed card layout
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RoundImageCard(
-                            image = R.drawable.profpic8,// needs replacing for user's pp
-                            Modifier
-                                .size(48.dp)
-                                .padding(4.dp)
-                        )
-                        Text(text = post.username ?: "Anonymous", fontWeight = FontWeight.Bold, color=Color.Black)
-                    }
-                    Image(
-                        // Convert Bitmap to a format Image composable understands and renders it
-                        painter = rememberAsyncImagePainter(model = post.imageUrl), // Use Coil to load image from URL
-                        contentDescription = null,
-                        // Style modifiers to control the layout and appearance of the image
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.68f)
-                            .padding(8.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.likeicon),
-                            contentDescription = null,
-                            colorFilter = if (!applyColorFilter) {
-                                ColorFilter.tint(Color.LightGray)
-                            } else {
-                                ColorFilter.tint(Color.Red)
-                            },
-                            alignment = Alignment.TopEnd,
-                            modifier = Modifier.clickable {
-                                // Toggle the applyColorFilter when the image is clicked
-                                val currentTimeStamp = System.currentTimeMillis()
-                                if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
-                                    applyColorFilter = !applyColorFilter
-                                    if(applyColorFilter){
-                                        feedViewModel.likePost(post.postId)
-                                        val message = "You liked a post"
-                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                        // Display a toast message using the obtained context
-                                        Toast.makeText(context, message, duration).show()
-                                    }else{
-                                        feedViewModel.unlikePost(post.postId)
-                                        val message = "You disliked a post"
-                                        val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                        // Display a toast message using the obtained context
-                                        Toast.makeText(context, message, duration).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, "Please wait before liking again.", Toast.LENGTH_SHORT).show()
-                                }
+                    Text("No Image Available", color = Color.Black)
+                }
+            }
 
+            // Like button and kebab menu
+            Row(
+                modifier = Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Like button
+                Image(
+                    painter = painterResource(id = R.drawable.likeicon),
+                    contentDescription = null,
+                    colorFilter = if (!applyColorFilter) {
+                        ColorFilter.tint(Color.LightGray)
+                    } else {
+                        ColorFilter.tint(Color.Red)
+                    },
+                    alignment = Alignment.TopEnd,
+                    modifier = Modifier
+                        .clickable {
+                            // Like/unlike post logic
+                            val currentTimeStamp = System.currentTimeMillis()
+                            if (currentTimeStamp - feedViewModel.lastLikeTimestamp >= feedViewModel.likeCooldown) {
+                                applyColorFilter = !applyColorFilter
+                                if (applyColorFilter) {
+                                    feedViewModel.likePost(post.postId)
+                                    Toast.makeText(context, "You liked a post", Toast.LENGTH_SHORT)
+                                        .show()
+                                } else {
+                                    feedViewModel.unlikePost(post.postId)
+                                    Toast.makeText(
+                                        context,
+                                        "You disliked a post",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Please wait before liking again.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                )
+                Text(text = "like", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
+
+                Spacer(modifier = Modifier.weight(1f))
+                Box {
+                    IconButton(
+                        onClick = { showMenu = !showMenu }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "Post Menu",
+                            tint = Color.Black
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        offset = DpOffset(0.dp, 0.dp), // Adjust offset if needed
+                        modifier = Modifier.align(Alignment.BottomStart) // Align to bottom-start of Box
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Download Doodle", color = selectedColor) },
+                            onClick = { showMenu = false },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "Download",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = selectedColor
+                                )
                             }
                         )
-                        Text(text = "likes", modifier = Modifier.padding(start = 8.dp), color = Color.Black)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        /*Image(
-                            painter = painterResource(id = R.drawable.downloadicon),
-                            contentDescription = "Download",
-                            modifier = Modifier.clickable {
-                                val message = "This is a fake download lol"
-                                val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
-                                // Display a toast message using the obtained context
-                                Toast.makeText(context, message, duration).show()
-                            }.size(26.dp)
-                        )*/
-                    }
-                    val tagsForThisPost = postTags[post.postId] ?: emptyList()
-                    FlowRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.Start,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        tagsForThisPost.forEach { tag ->
-                            Text(
-                                text = "#$tag",
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color.Gray.copy(alpha = 0.2f))
-                                    .padding(start = 4.dp, end = 4.dp),
-                                color = Color.Gray
+                        if (post.userId == feedViewModel.currentUserID) {
+                            DropdownMenuItem(
+                                text = { Text("Delete Post", color = selectedColor) },
+                                onClick = { showConfirmationDialog = true},
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = selectedColor
+                                    )
+                                }
                             )
                         }
                     }
                 }
+                ConfirmationDialog(
+                    showDialog = showConfirmationDialog,
+                    onDismiss = { showConfirmationDialog = false },
+                    title = "Delete Post",
+                    message = "Are you sure you want to delete this post?",
+                    onConfirm = {
+                        feedViewModel.deletePost(post.postId)
+                        showConfirmationDialog = false
+                        showMenu = false
+                    },
+                    onCancel = {
+                        showConfirmationDialog = false
+                        showMenu = false
+                    }
+                )
             }
-            if (isLastItem) {
-                Spacer(modifier = Modifier.padding(bottom = 65.dp))
+
+            // Displaying tags
+            val tagsForThisPost = postTags[post.postId] ?: emptyList()
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
+                tagsForThisPost.forEach { tag ->
+                    Text(
+                        text = "#$tag",
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Gray.copy(alpha = 0.2f))
+                            .padding(start = 4.dp, end = 4.dp),
+                        color = Color.Gray
+                    )
+                }
             }
+            Text(
+                text = "Posted on $formattedDate",
+                modifier = Modifier.padding(8.dp),
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
         }
     }
 }

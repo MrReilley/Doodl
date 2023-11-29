@@ -3,6 +3,8 @@ package com.example.doodl.viewmodel
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +24,12 @@ import java.util.UUID
 
 class CanvasViewModel(private val repository: Repository) : ViewModel() {
     val currentBitmap: MutableLiveData<Bitmap?> = MutableLiveData(null)
+    var canvasPaths: MutableLiveData<MutableList<Triple<List<Offset>, Color, Float>>> = MutableLiveData(mutableListOf())
+
+    fun clearCanvasPaths() {
+        canvasPaths.value = mutableListOf()
+    }
+
     fun uploadDrawing(bitmap: Bitmap, selectedTags: List<String>, onComplete: (Boolean) -> Unit) {
         try {
             val byteArray = bitmapToByteArray(bitmap)
@@ -29,31 +37,42 @@ class CanvasViewModel(private val repository: Repository) : ViewModel() {
             uploadTask.addOnSuccessListener {
                 // Get the image path
                 val imagePath = it.storage.path
-
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@addOnSuccessListener
 
-                // Fetch username and then save post to Firestore
-                repository.fetchUsername(userId).addOnSuccessListener { username ->
-                    // Create a Post object
-                    val postId = UUID.randomUUID().toString()
-                    val timestamp = System.currentTimeMillis()
-                    val newPost = Post(postId, userId, username ?: "Anonymous", timestamp, imagePath, tags = selectedTags)
+                // First, fetch the profilePicPath
+                repository.getProfilePicPath(userId).addOnSuccessListener { profilePicPath ->
+                    // Then, fetch the username
+                    repository.getUsername(userId).addOnSuccessListener { username ->
+                        // Create a Post object
+                        val postId = UUID.randomUUID().toString()
+                        val timestamp = System.currentTimeMillis()
+                        val newPost = Post(
+                            postId = postId,
+                            userId = userId,
+                            username = username ?: "Anonymous",
+                            timestamp = timestamp,
+                            imagePath = imagePath,
+                            tags = selectedTags,
+                            profilePicPath = profilePicPath
+                        )
 
-                    // Save the post to Firestore
-                    repository.savePostToFirestore(newPost)
-                        .addOnSuccessListener {
+                        // Save the post to Firestore
+                        repository.savePostToFirestore(newPost).addOnSuccessListener {
                             Log.d("CanvasViewModel", "Post saved successfully")
                             onComplete(true)
                         }.addOnFailureListener { exception ->
                             Log.e("CanvasViewModel", "Failed to save post: ${exception.message}")
                             onComplete(false)
                         }
+                    }.addOnFailureListener { exception ->
+                        Log.e("CanvasViewModel", "Failed to fetch username: ${exception.message}")
+                        onComplete(false)
+                    }
                 }.addOnFailureListener { exception ->
-                    Log.e("CanvasViewModel", "Failed to fetch username: ${exception.message}")
+                    Log.e("CanvasViewModel", "Failed to fetch profile picture path: ${exception.message}")
                     onComplete(false)
                 }
-
-            }.addOnFailureListener { exception: Exception ->
+            }.addOnFailureListener { exception ->
                 Log.e("CanvasViewModel", "Upload failed: ${exception.message}")
                 onComplete(false)
             }
